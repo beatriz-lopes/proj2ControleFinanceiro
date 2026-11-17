@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import { rotaNaoEncontrada, tratarErros } from './middlewares/erros.js';
+import { handleErrors, notFound } from './middlewares/errors.js';
 import authRoutes from './routes/auth.routes.js';
 
 const app = express();
@@ -10,17 +10,17 @@ app.disable('x-powered-by');
 app.use(cors({ origin: process.env.CORS_ORIGIN || 'http://localhost:5173' }));
 app.use(express.json({ limit: '100kb' }));
 
-// Rotas públicas: cadastro e login. /api/auth/me já usa autenticar internamente.
+// Public routes: register and login. /api/auth/me uses authenticate internally.
 app.use('/api/auth', authRoutes);
 
-// Rotas protegidas (Pessoas 2 e 3): registrar com o middleware autenticar, ex.:
-//   import { autenticar } from './middlewares/autenticar.js';
-//   app.use('/api/categorias', autenticar, categoriasRoutes);
+// Protected routes (Persons 2 and 3): register them with the authenticate middleware, e.g.:
+//   import { authenticate } from './middlewares/authenticate.js';
+//   app.use('/api/categories', authenticate, categoriesRoutes);
 
-app.use('/api', rotaNaoEncontrada);
-app.use(tratarErros);
+app.use('/api', notFound);
+app.use(handleErrors);
 
 const PORT = Number(process.env.PORT) || 3000;
 app.listen(PORT, () => {
-  console.log(`API rodando em http://localhost:${PORT}/api`);
+  console.log(`API running at http://localhost:${PORT}/api`);
 });

@@ -64,14 +64,35 @@ backend/
   src/
     server.js      app Express, middlewares e registro das rotas
     routes/        rotas + controladores
-    models/        acesso ao banco e funções puras (validacao.js: cpfValido etc.)
-    middlewares/   autenticar.js (JWT) e erros.js (HttpError + tratamento central)
-    config/        db.js (pool, transacao) e auth.js (JWT, bcrypt)
+    models/        acesso ao banco e funções puras (validation.js: isValidCpf etc.)
+    middlewares/   authenticate.js (JWT) e errors.js (HttpError + tratamento central)
+    config/        db.js (pool, withTransaction) e auth.js (JWT, bcrypt)
 frontend/src/
   components/      páginas e componentes
   contexts/        AuthContext
-  services/        api.js (único cliente HTTP) e validacao.js
+  services/        api.js (único cliente HTTP) e validation.js
 ```
+
+## Idioma e nomes
+
+O **código está em inglês** (arquivos, variáveis, tabelas, colunas, rotas e campos JSON); **todo texto exibido ao
+usuário está em português** (telas, mensagens de erro da API, nomes de categorias padrão). O enunciado permite
+adaptar nomes (seção 10.6) desde que entidades, relacionamentos e restrições do modelo sejam mantidos (10.4).
+Correspondência com os nomes do enunciado:
+
+| Enunciado | Código |
+|---|---|
+| `usuarios` (`nome`, `senha_hash`, `criado_em`) | `users` (`name`, `password_hash`, `created_at`) |
+| `categorias` (`tipo`: `entrada`/`saida`) | `categories` (`type`: `income`/`expense`) |
+| `fontes_destinos` (`tipo`: `renda`/`conta`/`cartao_credito`) | `accounts` (`type`: `income_source`/`bank_account`/`credit_card`) |
+| `dia_fechamento`, `dia_vencimento`, `limite` | `closing_day`, `due_day`, `credit_limit` |
+| `lancamentos` (`descricao`, `valor`, `data`) | `transactions` (`description`, `amount`, `date`) |
+| `categoria_id`, `fonte_destino_id` | `category_id`, `account_id` |
+| `parcela_atual`, `total_parcelas`, `grupo_parcelamento` | `installment_number`, `installment_count`, `installment_group` |
+| `/api/auth/cadastro` | `/api/auth/register` |
+| `/api/categorias`, `/api/fontes-destinos`, `/api/lancamentos` | `/api/categories`, `/api/accounts`, `/api/transactions` |
+| `/api/relatorios/...`, `/api/saude-financeira` | `/api/reports/...`, `/api/financial-health` |
+| erro `{ erro, campos }` | `{ error, fields }` |
 
 ## Rotas da API
 
@@ -79,7 +100,7 @@ Todas sob `/api` exigem `Authorization: Bearer <token>`, exceto cadastro e login
 
 | Método | Rota | Descrição | Respostas |
 |---|---|---|---|
-| POST | `/api/auth/cadastro` | Cadastra usuário (cria categorias e conta padrão) e devolve token | 201, 400, 409 |
+| POST | `/api/auth/register` | Cadastra usuário (cria categorias e conta padrão) e devolve token | 201, 400, 409 |
 | POST | `/api/auth/login` | Autentica e devolve JWT (máx. 10 tentativas / 15 min) | 200, 400, 401, 429 |
 | GET | `/api/auth/me` | Dados do usuário logado | 200, 401 |
 
@@ -90,24 +111,24 @@ _(Rotas de categorias, fontes/destinos, lançamentos, relatórios e saúde finan
 Toda resposta de erro tem o formato:
 
 ```json
-{ "erro": "Dados inválidos.", "campos": { "cpf": "CPF inválido." } }
+{ "error": "Dados inválidos.", "fields": { "cpf": "CPF inválido." } }
 ```
 
-No back-end, basta `throw new HttpError(status, mensagem, campos)` (de `middlewares/erros.js`).
+No back-end, basta `throw new HttpError(status, mensagem, fields)` (de `middlewares/errors.js`).
 
 ## Decisões de modelagem
 
 - **Unicidade de e-mail e CPF garantida pelo banco** (`UNIQUE`). E-mail é gravado em minúsculas e CPF só com
   dígitos; a API traduz o erro `23505` do PostgreSQL em `409` indicando o campo duplicado.
 - **Dinheiro em `NUMERIC(12,2)`**, nunca float.
-- **FKs compostas em `lancamentos`**: `(categoria_id, usuario_id, tipo)` referencia `categorias` e
-  `(fonte_destino_id, usuario_id)` referencia `fontes_destinos`. O banco impede usar categoria/fonte de outro
-  usuário ou categoria de tipo diferente do lançamento.
-- **Parcelas**: um lançamento por parcela, mesmo `grupo_parcelamento`, `data` = data da compra em todas as
-  parcelas; a fatura de cada parcela é calculada a partir da data da compra e de `parcela_atual`.
+- **FKs compostas em `transactions`**: `(category_id, user_id, type)` referencia `categories` e
+  `(account_id, user_id)` referencia `accounts`. O banco impede usar categoria/fonte de outro usuário ou
+  categoria de tipo diferente do lançamento.
+- **Parcelas**: um lançamento por parcela, mesmo `installment_group`, `date` = data da compra em todas as
+  parcelas; a fatura de cada parcela é calculada a partir da data da compra e de `installment_number`.
   Centavos de diferença ficam na 1ª parcela.
-- Campo extra `fontes_destinos.reserva` (boolean) para o indicador de reserva de emergência.
-- `usuario_id` sempre vem do token (`req.usuarioId`), nunca do corpo ou da URL. Registro de outro usuário → 404.
+- Campo extra `accounts.emergency_reserve` (boolean) para o indicador de reserva de emergência.
+- `user_id` sempre vem do token (`req.userId`), nunca do corpo ou da URL. Registro de outro usuário → 404.
 
 ## Equipe
 

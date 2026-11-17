@@ -3,35 +3,35 @@ import { useAuth } from '../contexts/AuthContext.jsx';
 
 const LINKS = [
   ['/', 'Resumo'],
-  ['/lancamentos', 'Lançamentos'],
-  ['/categorias', 'Categorias'],
-  ['/fontes-destinos', 'Fontes/Destinos'],
-  ['/relatorios', 'Relatórios'],
-  ['/faturas', 'Faturas'],
-  ['/saude-financeira', 'Saúde financeira'],
+  ['/transactions', 'Lançamentos'],
+  ['/categories', 'Categorias'],
+  ['/accounts', 'Fontes/Destinos'],
+  ['/reports', 'Relatórios'],
+  ['/invoices', 'Faturas'],
+  ['/financial-health', 'Saúde financeira'],
 ];
 
 export default function Layout() {
-  const { usuario, logout } = useAuth();
+  const { user, logout } = useAuth();
   return (
     <div className="app">
-      <header className="topo">
+      <header className="topbar">
         <strong>Controle Financeiro</strong>
         <nav>
-          {LINKS.map(([para, texto]) => (
-            <NavLink key={para} to={para} end={para === '/'}>
-              {texto}
+          {LINKS.map(([to, label]) => (
+            <NavLink key={to} to={to} end={to === '/'}>
+              {label}
             </NavLink>
           ))}
         </nav>
-        <div className="usuario">
-          <span>{usuario.nome}</span>
-          <button type="button" className="secundario" onClick={logout}>
+        <div className="user">
+          <span>{user.name}</span>
+          <button type="button" className="secondary" onClick={logout}>
             Sair
           </button>
         </div>
       </header>
-      <main className="conteudo">
+      <main className="content">
         <Outlet />
       </main>
     </div>

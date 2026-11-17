@@ -1,49 +1,49 @@
 import { useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router';
 import { useAuth } from '../contexts/AuthContext.jsx';
-import Campo from './Campo.jsx';
+import Field from './Field.jsx';
 
 export default function LoginPage() {
-  const { usuario, login } = useAuth();
+  const { user, login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [form, setForm] = useState({ email: '', senha: '' });
-  const [erros, setErros] = useState({ erro: '', campos: {} });
-  const [enviando, setEnviando] = useState(false);
+  const [form, setForm] = useState({ email: '', password: '' });
+  const [errors, setErrors] = useState({ message: '', fields: {} });
+  const [submitting, setSubmitting] = useState(false);
 
-  if (usuario) return <Navigate to="/" replace />;
+  if (user) return <Navigate to="/" replace />;
 
-  const alterar = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
-  async function enviar(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    const campos = {};
-    if (!form.email.trim()) campos.email = 'Informe o e-mail.';
-    if (!form.senha) campos.senha = 'Informe a senha.';
-    if (Object.keys(campos).length) return setErros({ erro: '', campos });
+    const fields = {};
+    if (!form.email.trim()) fields.email = 'Informe o e-mail.';
+    if (!form.password) fields.password = 'Informe a senha.';
+    if (Object.keys(fields).length) return setErrors({ message: '', fields });
 
-    setEnviando(true);
+    setSubmitting(true);
     try {
-      await login(form.email, form.senha);
-      navigate(location.state?.de ?? '/', { replace: true });
+      await login(form.email, form.password);
+      navigate(location.state?.from ?? '/', { replace: true });
     } catch (err) {
-      setErros({ erro: err.message, campos: err.campos ?? {} });
+      setErrors({ message: err.message, fields: err.fields ?? {} });
     } finally {
-      setEnviando(false);
+      setSubmitting(false);
     }
   }
 
   return (
-    <div className="pagina-auth">
-      <form className="cartao" onSubmit={enviar} noValidate>
+    <div className="auth-page">
+      <form className="card" onSubmit={handleSubmit} noValidate>
         <h1>Entrar</h1>
-        {erros.erro && <p className="erro-geral">{erros.erro}</p>}
-        <Campo id="email" rotulo="E-mail" type="email" autoComplete="email"
-          value={form.email} onChange={alterar} erro={erros.campos.email} />
-        <Campo id="senha" rotulo="Senha" type="password" autoComplete="current-password"
-          value={form.senha} onChange={alterar} erro={erros.campos.senha} />
-        <button type="submit" disabled={enviando}>{enviando ? 'Entrando...' : 'Entrar'}</button>
-        <p>Não tem conta? <Link to="/cadastro">Cadastre-se</Link></p>
+        {errors.message && <p className="form-error">{errors.message}</p>}
+        <Field id="email" label="E-mail" type="email" autoComplete="email"
+          value={form.email} onChange={handleChange} error={errors.fields.email} />
+        <Field id="password" label="Senha" type="password" autoComplete="current-password"
+          value={form.password} onChange={handleChange} error={errors.fields.password} />
+        <button type="submit" disabled={submitting}>{submitting ? 'Entrando...' : 'Entrar'}</button>
+        <p>Não tem conta? <Link to="/register">Cadastre-se</Link></p>
       </form>
     </div>
   );

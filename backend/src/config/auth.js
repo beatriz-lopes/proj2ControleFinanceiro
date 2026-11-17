@@ -1,5 +1,5 @@
 if (!process.env.JWT_SECRET) {
-  throw new Error('JWT_SECRET não definido. Copie backend/.env.example para backend/.env.');
+  throw new Error('JWT_SECRET is not set. Copy backend/.env.example to backend/.env.');
 }
 
 export const JWT_SECRET = process.env.JWT_SECRET;

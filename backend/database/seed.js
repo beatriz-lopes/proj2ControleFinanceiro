@@ -1,123 +1,124 @@
-// Dados de exemplo: 2 usuários com 3 meses de lançamentos (mês atual e os 2 anteriores).
-// Datas são relativas à data de hoje, para o "mês corrente" sempre ter dados.
-// Senha dos dois usuários de teste: Senha1234
+// Sample data: 2 users with 3 months of transactions (current month and the 2 previous ones).
+// Dates are relative to today, so the "current month" always has data.
+// Password of both test users: Senha1234
+// Descriptions, category and account names are user data, so they are in Portuguese.
 import { randomUUID } from 'node:crypto';
 import bcrypt from 'bcrypt';
-import { transacao } from '../src/config/db.js';
+import { withTransaction } from '../src/config/db.js';
 import { BCRYPT_ROUNDS } from '../src/config/auth.js';
-import { criar, criarDadosPadrao } from '../src/models/usuarios.model.js';
+import { create, createDefaults } from '../src/models/users.model.js';
 
-const SENHA_TESTE = 'Senha1234';
+const TEST_PASSWORD = 'Senha1234';
 
-// 'YYYY-MM-DD' do dia `dia` do mês (atual + deslocamento)
-function data(deslocamentoMes, dia) {
-  const hoje = new Date();
-  const d = new Date(hoje.getFullYear(), hoje.getMonth() + deslocamentoMes, dia);
+// 'YYYY-MM-DD' for day `day` of (current month + monthOffset)
+function date(monthOffset, day) {
+  const today = new Date();
+  const d = new Date(today.getFullYear(), today.getMonth() + monthOffset, day);
   const mm = String(d.getMonth() + 1).padStart(2, '0');
   const dd = String(d.getDate()).padStart(2, '0');
   return `${d.getFullYear()}-${mm}-${dd}`;
 }
 
-// Divide em centavos; a diferença vai para a 1ª parcela (100,00 em 3x = 33,34 + 33,33 + 33,33)
-function parcelas(valor, n) {
-  const totalCentavos = Math.round(valor * 100);
-  const base = Math.floor(totalCentavos / n);
-  const resto = totalCentavos - base * n;
-  return Array.from({ length: n }, (_, i) => (i === 0 ? base + resto : base) / 100);
+// Split in cents; the remainder goes to the 1st installment (100.00 in 3x = 33.34 + 33.33 + 33.33)
+function splitInstallments(amount, count) {
+  const totalCents = Math.round(amount * 100);
+  const base = Math.floor(totalCents / count);
+  const remainder = totalCents - base * count;
+  return Array.from({ length: count }, (_, i) => (i === 0 ? base + remainder : base) / 100);
 }
 
-async function criarUsuario(client, { nome, email, cpf }) {
-  const senhaHash = await bcrypt.hash(SENHA_TESTE, BCRYPT_ROUNDS);
-  const usuario = await criar({ nome, email, cpf, senhaHash }, client);
-  await criarDadosPadrao(usuario.id, client);
-  return usuario;
+async function createUser(client, { name, email, cpf }) {
+  const passwordHash = await bcrypt.hash(TEST_PASSWORD, BCRYPT_ROUNDS);
+  const user = await create({ name, email, cpf, passwordHash }, client);
+  await createDefaults(user.id, client);
+  return user;
 }
 
-async function criarFonte(client, usuarioId, f) {
-  const { rows } = await client.query(
-    `INSERT INTO fontes_destinos (usuario_id, nome, tipo, dia_fechamento, dia_vencimento, limite, reserva)
-     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
-    [usuarioId, f.nome, f.tipo, f.diaFechamento ?? null, f.diaVencimento ?? null, f.limite ?? null, f.reserva ?? false],
+async function createAccount(client, userId, a) {
+  await client.query(
+    `INSERT INTO accounts (user_id, name, type, closing_day, due_day, credit_limit, emergency_reserve)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+    [userId, a.name, a.type, a.closingDay ?? null, a.dueDay ?? null, a.creditLimit ?? null, a.emergencyReserve ?? false],
   );
-  return rows[0].id;
 }
 
-async function mapas(client, usuarioId) {
-  const cats = await client.query('SELECT id, nome, tipo FROM categorias WHERE usuario_id = $1', [usuarioId]);
-  const fontes = await client.query('SELECT id, nome FROM fontes_destinos WHERE usuario_id = $1', [usuarioId]);
+// Lookup tables: category id by "type:name" and account id by name
+async function lookups(client, userId) {
+  const categories = await client.query('SELECT id, name, type FROM categories WHERE user_id = $1', [userId]);
+  const accounts = await client.query('SELECT id, name FROM accounts WHERE user_id = $1', [userId]);
   return {
-    cat: Object.fromEntries(cats.rows.map((c) => [`${c.tipo}:${c.nome}`, c.id])),
-    fonte: Object.fromEntries(fontes.rows.map((f) => [f.nome, f.id])),
+    category: Object.fromEntries(categories.rows.map((c) => [`${c.type}:${c.name}`, c.id])),
+    account: Object.fromEntries(accounts.rows.map((a) => [a.name, a.id])),
   };
 }
 
-async function lancar(client, usuarioId, m, l) {
-  const valores = parcelas(l.valor, l.parcelas ?? 1);
-  const grupo = valores.length > 1 ? randomUUID() : null;
-  for (let i = 0; i < valores.length; i++) {
+async function addTransaction(client, userId, ids, t) {
+  const amounts = splitInstallments(t.amount, t.installments ?? 1);
+  const group = amounts.length > 1 ? randomUUID() : null;
+  for (let i = 0; i < amounts.length; i++) {
     await client.query(
-      `INSERT INTO lancamentos
-         (usuario_id, tipo, descricao, valor, data, categoria_id, fonte_destino_id,
-          parcela_atual, total_parcelas, grupo_parcelamento)
+      `INSERT INTO transactions
+         (user_id, type, description, amount, date, category_id, account_id,
+          installment_number, installment_count, installment_group)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
       [
-        usuarioId, l.tipo, l.descricao, valores[i], l.data,
-        m.cat[`${l.tipo}:${l.categoria}`], m.fonte[l.fonte],
-        i + 1, valores.length, grupo,
+        userId, t.type, t.description, amounts[i], t.date,
+        ids.category[`${t.type}:${t.category}`], ids.account[t.account],
+        i + 1, amounts.length, group,
       ],
     );
   }
 }
 
 export async function seed() {
-  await transacao(async (client) => {
+  await withTransaction(async (client) => {
     // ---------- Ana ----------
-    const ana = await criarUsuario(client, { nome: 'Ana Souza', email: 'ana@email.com', cpf: '52998224725' });
-    await criarFonte(client, ana.id, { nome: 'Nubank', tipo: 'cartao_credito', diaFechamento: 3, diaVencimento: 10, limite: 5000 });
-    await criarFonte(client, ana.id, { nome: 'Visa crédito', tipo: 'cartao_credito', diaFechamento: 25, diaVencimento: 5, limite: 3000 });
-    await criarFonte(client, ana.id, { nome: 'Poupança', tipo: 'conta', reserva: true });
-    const a = await mapas(client, ana.id);
+    const ana = await createUser(client, { name: 'Ana Souza', email: 'ana@email.com', cpf: '52998224725' });
+    await createAccount(client, ana.id, { name: 'Nubank', type: 'credit_card', closingDay: 3, dueDay: 10, creditLimit: 5000 });
+    await createAccount(client, ana.id, { name: 'Visa crédito', type: 'credit_card', closingDay: 25, dueDay: 5, creditLimit: 3000 });
+    await createAccount(client, ana.id, { name: 'Poupança', type: 'bank_account', emergencyReserve: true });
+    const a = await lookups(client, ana.id);
 
-    for (const mes of [-2, -1, 0]) {
-      const extra = (mes + 3) * 37; // varia um pouco os gastos entre os meses
-      const lancs = [
-        { tipo: 'entrada', descricao: 'Salário', valor: 6500, data: data(mes, 5), categoria: 'Salário', fonte: 'Conta corrente' },
-        { tipo: 'saida', descricao: 'Aluguel', valor: 1800, data: data(mes, 6), categoria: 'Moradia', fonte: 'Conta corrente' },
-        { tipo: 'saida', descricao: 'Conta de luz', valor: 180 + extra / 3, data: data(mes, 12), categoria: 'Moradia', fonte: 'Conta corrente' },
-        { tipo: 'saida', descricao: 'Supermercado', valor: 750 + extra, data: data(mes, 9), categoria: 'Alimentação', fonte: 'Nubank' },
-        { tipo: 'saida', descricao: 'Restaurante', valor: 140 + extra / 2, data: data(mes, 18), categoria: 'Alimentação', fonte: 'Visa crédito' },
-        { tipo: 'saida', descricao: 'Uber', valor: 95 + extra / 4, data: data(mes, 15), categoria: 'Mobilidade', fonte: 'Nubank' },
-        { tipo: 'saida', descricao: 'Farmácia', valor: 85, data: data(mes, 20), categoria: 'Saúde', fonte: 'Conta corrente' },
-        { tipo: 'saida', descricao: 'Cinema', valor: 60, data: data(mes, 22), categoria: 'Lazer', fonte: 'Nubank' },
-        { tipo: 'saida', descricao: 'Curso de inglês', valor: 320, data: data(mes, 8), categoria: 'Educação', fonte: 'Conta corrente' },
-        { tipo: 'saida', descricao: 'Transferência para poupança', valor: 500, data: data(mes, 7), categoria: 'Outros', fonte: 'Conta corrente' },
-        { tipo: 'entrada', descricao: 'Depósito na poupança', valor: 500, data: data(mes, 7), categoria: 'Outros', fonte: 'Poupança' },
+    for (const month of [-2, -1, 0]) {
+      const extra = (month + 3) * 37; // varies spending a bit between months
+      const list = [
+        { type: 'income', description: 'Salário', amount: 6500, date: date(month, 5), category: 'Salário', account: 'Conta corrente' },
+        { type: 'expense', description: 'Aluguel', amount: 1800, date: date(month, 6), category: 'Moradia', account: 'Conta corrente' },
+        { type: 'expense', description: 'Conta de luz', amount: 180 + extra / 3, date: date(month, 12), category: 'Moradia', account: 'Conta corrente' },
+        { type: 'expense', description: 'Supermercado', amount: 750 + extra, date: date(month, 9), category: 'Alimentação', account: 'Nubank' },
+        { type: 'expense', description: 'Restaurante', amount: 140 + extra / 2, date: date(month, 18), category: 'Alimentação', account: 'Visa crédito' },
+        { type: 'expense', description: 'Uber', amount: 95 + extra / 4, date: date(month, 15), category: 'Mobilidade', account: 'Nubank' },
+        { type: 'expense', description: 'Farmácia', amount: 85, date: date(month, 20), category: 'Saúde', account: 'Conta corrente' },
+        { type: 'expense', description: 'Cinema', amount: 60, date: date(month, 22), category: 'Lazer', account: 'Nubank' },
+        { type: 'expense', description: 'Curso de inglês', amount: 320, date: date(month, 8), category: 'Educação', account: 'Conta corrente' },
+        { type: 'expense', description: 'Transferência para poupança', amount: 500, date: date(month, 7), category: 'Outros', account: 'Conta corrente' },
+        { type: 'income', description: 'Depósito na poupança', amount: 500, date: date(month, 7), category: 'Outros', account: 'Poupança' },
       ];
-      for (const l of lancs) await lancar(client, ana.id, a, l);
+      for (const t of list) await addTransaction(client, ana.id, a, t);
     }
-    // Compras parceladas (data da compra igual em todas as parcelas)
-    await lancar(client, ana.id, a, { tipo: 'saida', descricao: 'Notebook', valor: 3600, parcelas: 10, data: data(-2, 12), categoria: 'Educação', fonte: 'Nubank' });
-    await lancar(client, ana.id, a, { tipo: 'saida', descricao: 'Fone de ouvido', valor: 100, parcelas: 3, data: data(-1, 3), categoria: 'Lazer', fonte: 'Nubank' });
-    await lancar(client, ana.id, a, { tipo: 'saida', descricao: 'Passagem aérea', valor: 1250, parcelas: 5, data: data(0, 26), categoria: 'Lazer', fonte: 'Visa crédito' });
+    // Installment purchases (purchase date is the same in every installment)
+    await addTransaction(client, ana.id, a, { type: 'expense', description: 'Notebook', amount: 3600, installments: 10, date: date(-2, 12), category: 'Educação', account: 'Nubank' });
+    await addTransaction(client, ana.id, a, { type: 'expense', description: 'Fone de ouvido', amount: 100, installments: 3, date: date(-1, 3), category: 'Lazer', account: 'Nubank' });
+    await addTransaction(client, ana.id, a, { type: 'expense', description: 'Passagem aérea', amount: 1250, installments: 5, date: date(0, 26), category: 'Lazer', account: 'Visa crédito' });
 
     // ---------- Bruno ----------
-    const bruno = await criarUsuario(client, { nome: 'Bruno Lima', email: 'bruno@email.com', cpf: '11144477735' });
-    await criarFonte(client, bruno.id, { nome: 'Inter', tipo: 'cartao_credito', diaFechamento: 28, diaVencimento: 7, limite: 2500 });
-    await criarFonte(client, bruno.id, { nome: 'Freelance', tipo: 'renda' });
-    const b = await mapas(client, bruno.id);
+    const bruno = await createUser(client, { name: 'Bruno Lima', email: 'bruno@email.com', cpf: '11144477735' });
+    await createAccount(client, bruno.id, { name: 'Inter', type: 'credit_card', closingDay: 28, dueDay: 7, creditLimit: 2500 });
+    await createAccount(client, bruno.id, { name: 'Freelance', type: 'income_source' });
+    const b = await lookups(client, bruno.id);
 
-    for (const mes of [-2, -1, 0]) {
-      const lancs = [
-        { tipo: 'entrada', descricao: 'Salário', valor: 3800, data: data(mes, 1), categoria: 'Salário', fonte: 'Conta corrente' },
-        { tipo: 'entrada', descricao: 'Projeto freelance', valor: 900 + mes * 150, data: data(mes, 20), categoria: 'Outros', fonte: 'Freelance' },
-        { tipo: 'saida', descricao: 'Aluguel', valor: 1400, data: data(mes, 5), categoria: 'Moradia', fonte: 'Conta corrente' },
-        { tipo: 'saida', descricao: 'Mercado', valor: 620 - mes * 40, data: data(mes, 10), categoria: 'Alimentação', fonte: 'Inter' },
-        { tipo: 'saida', descricao: 'Ônibus', valor: 180, data: data(mes, 2), categoria: 'Mobilidade', fonte: 'Conta corrente' },
-        { tipo: 'saida', descricao: 'Academia', valor: 110, data: data(mes, 4), categoria: 'Saúde', fonte: 'Inter' },
-        { tipo: 'saida', descricao: 'Show', valor: 250, data: data(mes, 16), categoria: 'Lazer', fonte: 'Inter' },
+    for (const month of [-2, -1, 0]) {
+      const list = [
+        { type: 'income', description: 'Salário', amount: 3800, date: date(month, 1), category: 'Salário', account: 'Conta corrente' },
+        { type: 'income', description: 'Projeto freelance', amount: 900 + month * 150, date: date(month, 20), category: 'Outros', account: 'Freelance' },
+        { type: 'expense', description: 'Aluguel', amount: 1400, date: date(month, 5), category: 'Moradia', account: 'Conta corrente' },
+        { type: 'expense', description: 'Mercado', amount: 620 - month * 40, date: date(month, 10), category: 'Alimentação', account: 'Inter' },
+        { type: 'expense', description: 'Ônibus', amount: 180, date: date(month, 2), category: 'Mobilidade', account: 'Conta corrente' },
+        { type: 'expense', description: 'Academia', amount: 110, date: date(month, 4), category: 'Saúde', account: 'Inter' },
+        { type: 'expense', description: 'Show', amount: 250, date: date(month, 16), category: 'Lazer', account: 'Inter' },
       ];
-      for (const l of lancs) await lancar(client, bruno.id, b, l);
+      for (const t of list) await addTransaction(client, bruno.id, b, t);
     }
-    await lancar(client, bruno.id, b, { tipo: 'saida', descricao: 'Celular', valor: 2400, parcelas: 12, data: data(-1, 14), categoria: 'Outros', fonte: 'Inter' });
+    await addTransaction(client, bruno.id, b, { type: 'expense', description: 'Celular', amount: 2400, installments: 12, date: date(-1, 14), category: 'Outros', account: 'Inter' });
   });
 }

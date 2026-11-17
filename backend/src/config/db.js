@@ -1,9 +1,9 @@
 import pg from 'pg';
 
-// NUMERIC (1700) chega como string por padrão; convertemos para número na resposta JSON.
-// Cálculos de dinheiro devem ser feitos no banco (SUM) ou em centavos inteiros.
+// NUMERIC (1700) comes as a string by default; convert it to a number in the JSON response.
+// Money math should be done in the database (SUM) or in integer cents.
 pg.types.setTypeParser(1700, (v) => parseFloat(v));
-// DATE (1082) fica como 'YYYY-MM-DD' (string) para não sofrer deslocamento de fuso horário.
+// DATE (1082) stays as a 'YYYY-MM-DD' string to avoid timezone shifts.
 pg.types.setTypeParser(1082, (v) => v);
 
 export const pool = new pg.Pool({
@@ -11,19 +11,19 @@ export const pool = new pg.Pool({
   max: 10,
 });
 
-// Consulta parametrizada simples: query('SELECT ... WHERE id = $1', [id])
+// Simple parameterized query: query('SELECT ... WHERE id = $1', [id])
 export function query(text, params) {
   return pool.query(text, params);
 }
 
-// Executa fn(client) dentro de uma transação. Qualquer erro faz ROLLBACK.
-export async function transacao(fn) {
+// Runs fn(client) inside a transaction. Any error triggers ROLLBACK.
+export async function withTransaction(fn) {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    const resultado = await fn(client);
+    const result = await fn(client);
     await client.query('COMMIT');
-    return resultado;
+    return result;
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;

@@ -2,101 +2,100 @@ import { Router } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import rateLimit from 'express-rate-limit';
-import { transacao } from '../config/db.js';
+import { withTransaction } from '../config/db.js';
 import { BCRYPT_ROUNDS, JWT_EXPIRES_IN, JWT_SECRET } from '../config/auth.js';
-import { autenticar } from '../middlewares/autenticar.js';
-import { HttpError } from '../middlewares/erros.js';
-import * as Usuarios from '../models/usuarios.model.js';
-import { cpfValido, emailValido, normalizarCpf, normalizarEmail, senhaValida } from '../models/validacao.js';
+import { authenticate } from '../middlewares/authenticate.js';
+import { HttpError } from '../middlewares/errors.js';
+import * as Users from '../models/users.model.js';
+import { isValidCpf, isValidEmail, isValidPassword, normalizeCpf, normalizeEmail } from '../models/validation.js';
 
 const router = Router();
 
-const gerarToken = (usuario) =>
-  jwt.sign({ sub: String(usuario.id) }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+const signToken = (user) => jwt.sign({ sub: String(user.id) }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 
-// Nome da constraint UNIQUE (schema.sql) -> campo e mensagem para o front-end
-const DUPLICADOS = {
-  usuarios_email_unico: ['email', 'E-mail já cadastrado.'],
-  usuarios_cpf_unico: ['cpf', 'CPF já cadastrado.'],
+// UNIQUE constraint name (schema.sql) -> field and message for the front-end
+const DUPLICATES = {
+  users_email_unique: ['email', 'E-mail já cadastrado.'],
+  users_cpf_unique: ['cpf', 'CPF já cadastrado.'],
 };
 
-// Login: no máximo 10 tentativas por IP a cada 15 minutos
-const limiteLogin = rateLimit({
+// Login: at most 10 attempts per IP every 15 minutes
+const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 10,
   standardHeaders: 'draft-8',
   legacyHeaders: false,
   handler: (req, res) =>
-    res.status(429).json({ erro: 'Muitas tentativas de login. Tente novamente em alguns minutos.', campos: {} }),
+    res.status(429).json({ error: 'Muitas tentativas de login. Tente novamente em alguns minutos.', fields: {} }),
 });
 
-// POST /api/auth/cadastro  -> 201 | 400 | 409
-router.post('/cadastro', async (req, res) => {
-  const nome = String(req.body?.nome ?? '').trim();
-  const email = normalizarEmail(req.body?.email);
-  const cpf = normalizarCpf(req.body?.cpf);
-  const { senha, confirmacaoSenha } = req.body ?? {};
+// POST /api/auth/register  -> 201 | 400 | 409
+router.post('/register', async (req, res) => {
+  const name = String(req.body?.name ?? '').trim();
+  const email = normalizeEmail(req.body?.email);
+  const cpf = normalizeCpf(req.body?.cpf);
+  const { password, passwordConfirmation } = req.body ?? {};
 
-  const campos = {};
-  if (!nome) campos.nome = 'Informe o nome.';
-  else if (nome.length > 120) campos.nome = 'Nome deve ter no máximo 120 caracteres.';
-  if (!email) campos.email = 'Informe o e-mail.';
-  else if (!emailValido(email)) campos.email = 'E-mail inválido.';
-  if (!cpf) campos.cpf = 'Informe o CPF.';
-  else if (!cpfValido(cpf)) campos.cpf = 'CPF inválido.';
-  if (!senha) campos.senha = 'Informe a senha.';
-  else if (!senhaValida(senha)) campos.senha = 'A senha deve ter ao menos 8 caracteres, com letras e números.';
-  if (senha !== confirmacaoSenha) campos.confirmacaoSenha = 'As senhas não conferem.';
-  if (Object.keys(campos).length) throw new HttpError(400, 'Dados inválidos.', campos);
+  const fields = {};
+  if (!name) fields.name = 'Informe o nome.';
+  else if (name.length > 120) fields.name = 'Nome deve ter no máximo 120 caracteres.';
+  if (!email) fields.email = 'Informe o e-mail.';
+  else if (!isValidEmail(email)) fields.email = 'E-mail inválido.';
+  if (!cpf) fields.cpf = 'Informe o CPF.';
+  else if (!isValidCpf(cpf)) fields.cpf = 'CPF inválido.';
+  if (!password) fields.password = 'Informe a senha.';
+  else if (!isValidPassword(password)) fields.password = 'A senha deve ter ao menos 8 caracteres, com letras e números.';
+  if (password !== passwordConfirmation) fields.passwordConfirmation = 'As senhas não conferem.';
+  if (Object.keys(fields).length) throw new HttpError(400, 'Dados inválidos.', fields);
 
-  const senhaHash = await bcrypt.hash(senha, BCRYPT_ROUNDS);
+  const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
   try {
-    // Usuário + categorias/fonte padrão: tudo ou nada
-    const usuario = await transacao(async (client) => {
-      const novo = await Usuarios.criar({ nome, email, cpf, senhaHash }, client);
-      await Usuarios.criarDadosPadrao(novo.id, client);
-      return novo;
+    // User + default categories/account: all or nothing
+    const user = await withTransaction(async (client) => {
+      const created = await Users.create({ name, email, cpf, passwordHash }, client);
+      await Users.createDefaults(created.id, client);
+      return created;
     });
-    res.status(201).json({ token: gerarToken(usuario), usuario });
+    res.status(201).json({ token: signToken(user), user });
   } catch (err) {
-    // 23505 = unique_violation no PostgreSQL. O banco é quem garante a unicidade.
-    const duplicado = err.code === '23505' && DUPLICADOS[err.constraint];
-    if (duplicado) {
-      const [campo, mensagem] = duplicado;
-      throw new HttpError(409, mensagem, { [campo]: mensagem });
+    // 23505 = unique_violation in PostgreSQL. The database is what guarantees uniqueness.
+    const duplicate = err.code === '23505' && DUPLICATES[err.constraint];
+    if (duplicate) {
+      const [field, message] = duplicate;
+      throw new HttpError(409, message, { [field]: message });
     }
     throw err;
   }
 });
 
-// Hash fixo usado quando o e-mail não existe, para o tempo de resposta não revelar isso
-const HASH_FALSO = bcrypt.hashSync('senha-que-nao-existe-123', BCRYPT_ROUNDS);
+// Fixed hash used when the e-mail does not exist, so response time does not reveal it
+const DUMMY_HASH = bcrypt.hashSync('password-that-does-not-exist-123', BCRYPT_ROUNDS);
 
 // POST /api/auth/login  -> 200 | 400 | 401 | 429
-router.post('/login', limiteLogin, async (req, res) => {
-  const email = normalizarEmail(req.body?.email);
-  const senha = req.body?.senha;
+router.post('/login', loginLimiter, async (req, res) => {
+  const email = normalizeEmail(req.body?.email);
+  const password = req.body?.password;
 
-  const campos = {};
-  if (!email) campos.email = 'Informe o e-mail.';
-  if (!senha) campos.senha = 'Informe a senha.';
-  if (Object.keys(campos).length) throw new HttpError(400, 'Dados inválidos.', campos);
+  const fields = {};
+  if (!email) fields.email = 'Informe o e-mail.';
+  if (!password) fields.password = 'Informe a senha.';
+  if (Object.keys(fields).length) throw new HttpError(400, 'Dados inválidos.', fields);
 
-  const usuario = await Usuarios.buscarPorEmailComSenha(email);
-  const senhaConfere = await bcrypt.compare(String(senha), usuario?.senha_hash ?? HASH_FALSO);
-  if (!usuario || !senhaConfere) {
-    throw new HttpError(401, 'E-mail ou senha inválidos.'); // mensagem genérica de propósito
+  const user = await Users.findByEmailWithPassword(email);
+  const passwordMatches = await bcrypt.compare(String(password), user?.password_hash ?? DUMMY_HASH);
+  if (!user || !passwordMatches) {
+    throw new HttpError(401, 'E-mail ou senha inválidos.'); // generic message on purpose
   }
 
-  const { senha_hash, ...publico } = usuario; // nunca devolver senha_hash
-  res.json({ token: gerarToken(publico), usuario: publico });
+  const { password_hash, ...publicUser } = user; // never return password_hash
+  res.json({ token: signToken(publicUser), user: publicUser });
 });
 
 // GET /api/auth/me  -> 200 | 401
-router.get('/me', autenticar, async (req, res) => {
-  const usuario = await Usuarios.buscarPorId(req.usuarioId);
-  if (!usuario) throw new HttpError(401, 'Usuário não encontrado.');
-  res.json({ usuario });
+router.get('/me', authenticate, async (req, res) => {
+  const user = await Users.findById(req.userId);
+  if (!user) throw new HttpError(401, 'Usuário não encontrado.');
+  res.json({ user });
 });
 
 export default router;

@@ -1,75 +1,77 @@
--- Esquema do banco (PostgreSQL 18). Executado por: npm run db:reset
--- ATENÇÃO: apaga e recria todas as tabelas.
+-- Database schema (PostgreSQL 18). Run with: npm run db:reset
+-- WARNING: drops and recreates every table.
 
-DROP TABLE IF EXISTS lancamentos;
-DROP TABLE IF EXISTS fontes_destinos;
-DROP TABLE IF EXISTS categorias;
-DROP TABLE IF EXISTS usuarios;
+DROP TABLE IF EXISTS transactions;
+DROP TABLE IF EXISTS accounts;
+DROP TABLE IF EXISTS categories;
+DROP TABLE IF EXISTS users;
 
-CREATE TABLE usuarios (
-  id          SERIAL PRIMARY KEY,
-  nome        VARCHAR(120) NOT NULL,
-  email       VARCHAR(160) NOT NULL,          -- gravado em minúsculas pela API
-  cpf         CHAR(11)     NOT NULL,          -- só dígitos
-  senha_hash  VARCHAR(100) NOT NULL,
-  criado_em   TIMESTAMP    NOT NULL DEFAULT now(),
-  -- A unicidade é garantida pelo banco (não só por consulta prévia na API).
-  -- Os nomes das constraints são usados na API para saber qual campo duplicou.
-  CONSTRAINT usuarios_email_unico UNIQUE (email),
-  CONSTRAINT usuarios_cpf_unico   UNIQUE (cpf),
-  CONSTRAINT usuarios_email_minusculo CHECK (email = lower(email)),
-  CONSTRAINT usuarios_cpf_digitos     CHECK (cpf ~ '^[0-9]{11}$')
+CREATE TABLE users (
+  id             SERIAL PRIMARY KEY,
+  name           VARCHAR(120) NOT NULL,
+  email          VARCHAR(160) NOT NULL,          -- stored lowercase by the API
+  cpf            CHAR(11)     NOT NULL,          -- digits only
+  password_hash  VARCHAR(100) NOT NULL,
+  created_at     TIMESTAMP    NOT NULL DEFAULT now(),
+  -- Uniqueness is guaranteed by the database (not only by a lookup in the API).
+  -- The API uses these constraint names to tell which field is duplicated.
+  CONSTRAINT users_email_unique UNIQUE (email),
+  CONSTRAINT users_cpf_unique   UNIQUE (cpf),
+  CONSTRAINT users_email_lowercase CHECK (email = lower(email)),
+  CONSTRAINT users_cpf_digits      CHECK (cpf ~ '^[0-9]{11}$')
 );
 
-CREATE TABLE categorias (
-  id          SERIAL PRIMARY KEY,
-  usuario_id  INTEGER     NOT NULL REFERENCES usuarios (id) ON DELETE CASCADE,
-  nome        VARCHAR(60) NOT NULL,
-  tipo        VARCHAR(7)  NOT NULL CHECK (tipo IN ('entrada', 'saida')),
-  CONSTRAINT categorias_nome_unico UNIQUE (usuario_id, nome, tipo),
-  -- usada pela FK composta de lancamentos (garante dono e tipo iguais)
-  CONSTRAINT categorias_id_usuario_tipo UNIQUE (id, usuario_id, tipo)
+CREATE TABLE categories (
+  id       SERIAL PRIMARY KEY,
+  user_id  INTEGER     NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+  name     VARCHAR(60) NOT NULL,
+  type     VARCHAR(7)  NOT NULL CHECK (type IN ('income', 'expense')),
+  CONSTRAINT categories_name_unique UNIQUE (user_id, name, type),
+  -- target of the composite FK in transactions (same owner and same type)
+  CONSTRAINT categories_id_user_type UNIQUE (id, user_id, type)
 );
 
-CREATE TABLE fontes_destinos (
-  id              SERIAL PRIMARY KEY,
-  usuario_id      INTEGER     NOT NULL REFERENCES usuarios (id) ON DELETE CASCADE,
-  nome            VARCHAR(60) NOT NULL,
-  tipo            VARCHAR(14) NOT NULL CHECK (tipo IN ('renda', 'conta', 'cartao_credito')),
-  dia_fechamento  SMALLINT CHECK (dia_fechamento BETWEEN 1 AND 31),
-  dia_vencimento  SMALLINT CHECK (dia_vencimento BETWEEN 1 AND 31),
-  limite          NUMERIC(12, 2) CHECK (limite >= 0),
-  reserva         BOOLEAN NOT NULL DEFAULT false,  -- extra: conta de reserva de emergência (saúde financeira)
-  CONSTRAINT fontes_destinos_nome_unico UNIQUE (usuario_id, nome),
-  CONSTRAINT fontes_destinos_id_usuario UNIQUE (id, usuario_id),
-  CONSTRAINT fontes_destinos_cartao_completo CHECK (
-    tipo <> 'cartao_credito'
-    OR (dia_fechamento IS NOT NULL AND dia_vencimento IS NOT NULL AND limite IS NOT NULL)
+-- "Fontes/destinos": where money comes from (income) or goes to (expense)
+CREATE TABLE accounts (
+  id                 SERIAL PRIMARY KEY,
+  user_id            INTEGER     NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+  name               VARCHAR(60) NOT NULL,
+  type               VARCHAR(14) NOT NULL CHECK (type IN ('income_source', 'bank_account', 'credit_card')),
+  closing_day        SMALLINT CHECK (closing_day BETWEEN 1 AND 31),
+  due_day            SMALLINT CHECK (due_day BETWEEN 1 AND 31),
+  credit_limit       NUMERIC(12, 2) CHECK (credit_limit >= 0),
+  emergency_reserve  BOOLEAN NOT NULL DEFAULT false,  -- extra: emergency fund account (financial health)
+  CONSTRAINT accounts_name_unique UNIQUE (user_id, name),
+  CONSTRAINT accounts_id_user UNIQUE (id, user_id),
+  CONSTRAINT accounts_credit_card_complete CHECK (
+    type <> 'credit_card'
+    OR (closing_day IS NOT NULL AND due_day IS NOT NULL AND credit_limit IS NOT NULL)
   )
 );
 
-CREATE TABLE lancamentos (
+CREATE TABLE transactions (
   id                  SERIAL PRIMARY KEY,
-  usuario_id          INTEGER        NOT NULL REFERENCES usuarios (id) ON DELETE CASCADE,
-  tipo                VARCHAR(7)     NOT NULL CHECK (tipo IN ('entrada', 'saida')),
-  descricao           VARCHAR(120)   NOT NULL,
-  valor               NUMERIC(12, 2) NOT NULL CHECK (valor > 0),
-  data                DATE           NOT NULL,   -- data da compra (igual em todas as parcelas)
-  categoria_id        INTEGER        NOT NULL,
-  fonte_destino_id    INTEGER        NOT NULL,
-  parcela_atual       SMALLINT       NOT NULL DEFAULT 1,
-  total_parcelas      SMALLINT       NOT NULL DEFAULT 1 CHECK (total_parcelas BETWEEN 1 AND 48),
-  grupo_parcelamento  UUID,                      -- igual em todas as parcelas de uma compra
-  criado_em           TIMESTAMP      NOT NULL DEFAULT now(),
-  CONSTRAINT lancamentos_parcela_valida CHECK (parcela_atual BETWEEN 1 AND total_parcelas),
-  -- FKs compostas (sem cascade): a categoria precisa ser do MESMO usuário e do MESMO tipo
-  -- do lançamento, e a fonte/destino do MESMO usuário. A API valida antes; o banco garante.
-  CONSTRAINT lancamentos_categoria_fk FOREIGN KEY (categoria_id, usuario_id, tipo)
-    REFERENCES categorias (id, usuario_id, tipo),
-  CONSTRAINT lancamentos_fonte_destino_fk FOREIGN KEY (fonte_destino_id, usuario_id)
-    REFERENCES fontes_destinos (id, usuario_id)
+  user_id             INTEGER        NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+  type                VARCHAR(7)     NOT NULL CHECK (type IN ('income', 'expense')),
+  description         VARCHAR(120)   NOT NULL,
+  amount              NUMERIC(12, 2) NOT NULL CHECK (amount > 0),
+  date                DATE           NOT NULL,   -- purchase date (same in every installment)
+  category_id         INTEGER        NOT NULL,
+  account_id          INTEGER        NOT NULL,
+  installment_number  SMALLINT       NOT NULL DEFAULT 1,
+  installment_count   SMALLINT       NOT NULL DEFAULT 1 CHECK (installment_count BETWEEN 1 AND 48),
+  installment_group   UUID,                      -- same value in all installments of a purchase
+  created_at          TIMESTAMP      NOT NULL DEFAULT now(),
+  CONSTRAINT transactions_installment_valid CHECK (installment_number BETWEEN 1 AND installment_count),
+  -- Composite FKs (no cascade): the category must belong to the SAME user and have the SAME
+  -- type as the transaction; the account must belong to the SAME user. The API validates
+  -- first; the database guarantees it.
+  CONSTRAINT transactions_category_fk FOREIGN KEY (category_id, user_id, type)
+    REFERENCES categories (id, user_id, type),
+  CONSTRAINT transactions_account_fk FOREIGN KEY (account_id, user_id)
+    REFERENCES accounts (id, user_id)
 );
 
-CREATE INDEX idx_lancamentos_usuario_data ON lancamentos (usuario_id, data);
-CREATE INDEX idx_lancamentos_categoria ON lancamentos (categoria_id);
-CREATE INDEX idx_lancamentos_fonte_destino ON lancamentos (fonte_destino_id);
+CREATE INDEX idx_transactions_user_date ON transactions (user_id, date);
+CREATE INDEX idx_transactions_category ON transactions (category_id);
+CREATE INDEX idx_transactions_account ON transactions (account_id);

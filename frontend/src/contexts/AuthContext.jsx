@@ -1,42 +1,42 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { definirAoNaoAutorizado, get, post, tokenStorage } from '../services/api.js';
+import { get, post, setOnUnauthorized, tokenStorage } from '../services/api.js';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => tokenStorage.get());
-  const [usuario, setUsuario] = useState(null);
-  // Se já existe token salvo, confirma com /auth/me antes de liberar as rotas protegidas
-  const [carregando, setCarregando] = useState(() => Boolean(tokenStorage.get()));
+  const [user, setUser] = useState(null);
+  // If a token is already saved, confirm it with /auth/me before allowing protected routes
+  const [loading, setLoading] = useState(() => Boolean(tokenStorage.get()));
 
   const logout = useCallback(() => {
     tokenStorage.remove();
     setToken(null);
-    setUsuario(null);
+    setUser(null);
   }, []);
 
-  // Qualquer 401 vindo da API (token expirado) faz logout -> RotaProtegida manda para /login
-  useEffect(() => definirAoNaoAutorizado(logout), [logout]);
+  // Any 401 from the API (expired token) logs out -> ProtectedRoute redirects to /login
+  useEffect(() => setOnUnauthorized(logout), [logout]);
 
   useEffect(() => {
     if (!tokenStorage.get()) return;
     get('/auth/me')
-      .then((dados) => setUsuario(dados.usuario))
+      .then((data) => setUser(data.user))
       .catch(() => logout())
-      .finally(() => setCarregando(false));
+      .finally(() => setLoading(false));
   }, [logout]);
 
-  function entrar({ token, usuario }) {
+  function signIn({ token, user }) {
     tokenStorage.set(token);
     setToken(token);
-    setUsuario(usuario);
+    setUser(user);
   }
 
-  const login = async (email, senha) => entrar(await post('/auth/login', { email, senha }));
-  const cadastrar = async (dados) => entrar(await post('/auth/cadastro', dados));
+  const login = async (email, password) => signIn(await post('/auth/login', { email, password }));
+  const register = async (data) => signIn(await post('/auth/register', data));
 
   return (
-    <AuthContext.Provider value={{ usuario, token, carregando, login, logout, cadastrar }}>
+    <AuthContext.Provider value={{ user, token, loading, login, logout, register }}>
       {children}
     </AuthContext.Provider>
   );
