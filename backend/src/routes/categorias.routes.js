@@ -3,8 +3,8 @@ const router = express.Router();
 
 const pool =  require("../config/db");
 
+// Listar categorias
 router.get("/", async (req, res) => {
-
     try{
         const usuarioId = req.user.id;
         const resultado = await pool.query(
@@ -17,6 +17,7 @@ router.get("/", async (req, res) => {
             [usuarioId]
         );
         return res.status(200).json(resultado.rows);
+
     } catch (erro){
         console.error(erro);
 
@@ -26,3 +27,43 @@ router.get("/", async (req, res) => {
     }
 });
 
+// Cadastrar/ Criar categoria
+router.post("/", async (req, res) => {
+    try{
+        const usuarioId = req.user.id;
+        const {nome, tipo, descricao} = req.body;
+
+        if(!nome || nome.trim()){
+            return res.status(400).json({
+                erro: "O campo nome é obrigatório"
+            });
+        }
+
+        if(!["receita", "despesa"].includes(tipo)){
+            return res.status(400).json({
+                erro: "Tipo de categoria inválida"
+            });
+        }
+
+        const resultado = await pool.query(
+            `
+            INSERT INTO categorias
+            (usuario_id, nome, tipo, descricao)
+            VALUES ($1, $2, $3, $4)
+            RETURNING *
+            `,
+            [usuarioId, nome.trim(), tipo, decricao || null]
+        );
+        return res.status(200).json({
+            mensagem: "Categoria criada com sucesso",
+            categoria: resultado.rows[0]
+        });
+
+    } catch (erro){
+        console.error(erro);
+        
+        return res.status(500).json({
+            erro: "Erro ao criar categoria"
+        });
+    }
+});
