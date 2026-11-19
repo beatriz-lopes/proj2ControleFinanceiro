@@ -127,3 +127,74 @@ router.post("/", async (req, res) => {
     });
   }
 });
+
+// Listar lançamento específico (por ID)
+router.get("/:id", async (req, res) => {
+  try{
+    const resultado = await pool.query(
+      `
+      SELECT
+        l.*,
+        c.nome AS categoria,
+        fd.nome AS fonte_destino
+
+       FROM lancamentos l
+
+       INNER JOIN categorias c
+         ON c.id = l.categoria_id
+
+       INNER JOIN fontes_destinos fd
+         ON fd.id = l.fonte_destino_id
+
+       WHERE l.id = $1
+       AND l.usuario_id = $2
+       `,
+      [req.params.id, req.user.id]
+    );
+
+    if (!resultado.rows.length) {
+      return res.status(404).json({
+        erro: "Lançamento não encontrado"
+      });
+    }
+    return res.json(resultado.rows[0]);
+
+  } catch (erro) {
+    return res.status(500).json({
+      erro: "Erro ao listar lançamento"
+    });
+  }
+});
+
+// Deletar/ Excluir lançamento
+router.delete("/:id", async (req, res) => {
+  try{
+    const resultado = await pool.query(
+      `
+      DELETE FROM lancamentos
+       WHERE id = $1
+       AND usuario_id = $2
+       RETURNING *
+       `,
+      [req.params.id, req.user.id]
+    );
+
+    if (!resultado.rows.length) {
+      return res.status(404).json({
+        erro: "Lançamento não encontrado"
+      });
+    }
+    return res.json({
+      mensagem: "Lançamento excluído"
+    });
+
+  } catch (erro) {
+    console.error(erro);
+
+    return res.status(500).json({
+      erro: "Erro ao excluir lançamento"
+    });
+  }
+});
+
+module.exports = router;

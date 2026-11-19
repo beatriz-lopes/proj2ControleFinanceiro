@@ -5,6 +5,7 @@ import { handleErrors, notFound } from './middlewares/errors.js';
 import authRoutes from './routes/auth.routes.js';
 import categoriaRoutes from './routes/categorias.routes.js';
 import fonteDestinoRoutes from './routes/categorias.routes.js'
+import lancamentoRoutes from './routes/lancamento.routes.js'
 
 const app = express();
 
@@ -16,6 +17,7 @@ app.use(express.json({ limit: '100kb' }));
 app.use('/api/auth', authRoutes);
 app.use('/api/categorias', categoriaRoutes);
 app.use('/api/fontes-destinos', fonteDestinoRoutes);
+app.use('/api/lancamentos', lancamentoRoutes);
 
 // Protected routes (Persons 2 and 3): register them with the authenticate middleware, e.g.:
 //   import { authenticate } from './middlewares/authenticate.js';
