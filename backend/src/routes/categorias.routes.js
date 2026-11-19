@@ -139,3 +139,37 @@ router.put("/:id", async (req, res) => {
         });
     }
 });
+
+// Deletar/ Excluir categoria
+router.delete("/:id", async (req, res) =>{
+    try{
+        const usuarioId = req.user.id;
+        const { id } = req.params;
+        const resultado = await pool.query(
+            `
+            DELETE FROM categorias
+            WHERE id = $1
+            AND usuario_id = $2
+            RETURNING *
+            `,
+            [id, usuarioId]
+        );
+
+        if(resultado.rows.length === 0){
+            return res.status(404).json({
+                erro: "Categoria não encontrada"
+            });
+        }
+        return res.status(200).json({
+            mensagem: "Categoria excluída com sucesso"
+        });
+    } catch (erro){
+        console.error(erro);
+
+        return res.status(500).json({
+            erro: "Erro ao excluir a categoria"
+        });
+    }
+});
+
+module.exports = router;
