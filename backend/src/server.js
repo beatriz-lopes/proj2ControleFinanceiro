@@ -5,7 +5,8 @@ import { handleErrors, notFound } from './middlewares/errors.js';
 import authRoutes from './routes/auth.routes.js';
 import categoriaRoutes from './routes/categorias.routes.js';
 import fonteDestinoRoutes from './routes/categorias.routes.js'
-import lancamentoRoutes from './routes/lancamento.routes.js'
+import lancamentoRoutes from './routes/lancamento.routes.js';
+import parcelamentoRoutes from './routes/parcelamento.routes.js'
 
 const app = express();
 
@@ -18,6 +19,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/categorias', categoriaRoutes);
 app.use('/api/fontes-destinos', fonteDestinoRoutes);
 app.use('/api/lancamentos', lancamentoRoutes);
+app.use('/api/parcelamentos', parcelamentoRoutes);
 
 // Protected routes (Persons 2 and 3): register them with the authenticate middleware, e.g.:
 //   import { authenticate } from './middlewares/authenticate.js';
