@@ -5,8 +5,8 @@ import { handleErrors, notFound } from './middlewares/errors.js';
 import authRoutes from './routes/auth.routes.js';
 import categoriaRoutes from './routes/categorias.routes.js';
 import fonteDestinoRoutes from './routes/categorias.routes.js'
-import lancamentoRoutes from './routes/lancamento.routes.js';
-import parcelamentoRoutes from './routes/parcelamento.routes.js'
+import lancamentoRoutes from './routes/lancamentos.routes.js';
+import parcelamentoRoutes from './routes/parcelamentos.routes.js'
 
 const app = express();
 

@@ -42,6 +42,49 @@ function adicionarMes(data, quantidade) {
   );
 }
 
+//Listar parcelas futuras
+router.get("/futuros", async (req, res) => {
+  try{
+    const resultado = await pool.query(
+      `
+      SELECT
+        p.id,
+        p.numero_parcela,
+        p.valor,
+        p.data_vencimento,
+        p.status,
+        pa.id AS parcelamento_id,
+        l.descricao
+
+       FROM parcelas p
+
+       INNER JOIN parcelamentos pa
+         ON pa.id = p.parcelamento_id
+
+       INNER JOIN lancamentos l
+         ON l.id = pa.lancamento_id
+
+       WHERE pa.usuario_id = $1
+       AND p.status = 'pendente'
+       AND p.data_vencimento >= CURRENT_DATE
+
+       ORDER BY p.data_vencimento ASC
+       `,
+      [req.user.id]
+    );
+    return res.json(resultado.rows);
+
+  } catch (erro) {
+    console.error(erro);
+
+    return res.status(500).json({
+      erro: "Erro ao consultar parcelas futuras"
+    });
+  }
+});
+
+module.exports = router;
+
 // Cadastrar/ Criar parcelamento
 router.post("/", async (req, res) => {
   const client = await pool.connect();
@@ -175,46 +218,3 @@ router.post("/", async (req, res) => {
     client.release();
   }
 });
-
-//Listar parcelas futuras
-router.get("/futuros", async (req, res) => {
-  try{
-    const resultado = await pool.query(
-      `
-      SELECT
-        p.id,
-        p.numero_parcela,
-        p.valor,
-        p.data_vencimento,
-        p.status,
-        pa.id AS parcelamento_id,
-        l.descricao
-
-       FROM parcelas p
-
-       INNER JOIN parcelamentos pa
-         ON pa.id = p.parcelamento_id
-
-       INNER JOIN lancamentos l
-         ON l.id = pa.lancamento_id
-
-       WHERE pa.usuario_id = $1
-       AND p.status = 'pendente'
-       AND p.data_vencimento >= CURRENT_DATE
-
-       ORDER BY p.data_vencimento ASC
-       `,
-      [req.user.id]
-    );
-    return res.json(resultado.rows);
-
-  } catch (erro) {
-    console.error(erro);
-
-    return res.status(500).json({
-      erro: "Erro ao consultar parcelas futuras"
-    });
-  }
-});
-
-module.exports = router;

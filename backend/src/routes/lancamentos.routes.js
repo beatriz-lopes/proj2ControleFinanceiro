@@ -3,10 +3,69 @@ const router = express.Router();
 
 const pool = require('../config/db');
 
-// Listar lançamentos
+// Listar lançamentos + Filtros por paginação
 router.get("/", async (req, res) => {
   try{
     const usuarioId = req.user.id;
+    const { tipo, categoria_id, dataInicio, dataFim, page = 1, limit = 10 } = req.query;
+
+    const pagina = Math.max(1, Number(page));
+    const limite = Math.min(100, Math.max(1, Number(limit)));
+
+    if (!Number.isInteger(pagina) || !Number.isInteger(limite)) {
+      return res.status(400).json({
+        erro: "Paginação inválida"
+      });
+    }
+
+    if (tipo && !["receita", "despesa"].includes(tipo)) {
+      return res.status(400).json({
+        erro: "Tipo inválido"
+      });
+    }
+
+    const filtros = ["l.usuario_id = $1"];
+    const valores = [usuarioId];
+
+    if (tipo) {
+      valores.push(tipo);
+      filtros.push(`l.tipo = $${valores.length}`);
+    }
+
+    if (categoria_id) {
+      valores.push(Number(categoria_id));
+      filtros.push(`l.categoria_id = $${valores.length}`);
+    }
+
+    if (dataInicio) {
+      valores.push(dataInicio);
+      filtros.push(`l.data >= $${valores.length}`);
+    }
+
+    if (dataFim) {
+      valores.push(dataFim);
+      filtros.push(`l.data <= $${valores.length}`);
+    }
+
+    const where = filtros.join(" AND ");
+
+    const totalResultado = await pool.query(
+      `
+      SELECT COUNT(*) AS total
+       FROM lancamentos l
+       WHERE ${where}
+       `,
+      valores
+    );
+
+    const total = Number(totalResultado.rows[0].total);
+
+    valores.push(limite);
+    const limitePosicao = valores.length;
+
+    valores.push((pagina - 1) * limite);
+    const offsetPosicao = valores.length;
+
     const resultado = await pool.query(
       `
       SELECT
@@ -22,19 +81,30 @@ router.get("/", async (req, res) => {
        INNER JOIN fontes_destinos fd
          ON fd.id = l.fonte_destino_id
 
-       WHERE l.usuario_id = $1
+       WHERE ${where}
 
        ORDER BY l.data DESC, l.id DESC
+
+       LIMIT $${limitePosicao}
+       OFFSET $${offsetPosicao}
        `,
-      [usuarioId]
+      valores
     );
-    return res.status(200).json(resultado.rows);
+    return res.json({
+      dados: resultado.rows,
+      paginacao: {
+        pagina,
+        limite,
+        total,
+        totalPaginas: Math.ceil(total / limite)
+      }
+    });
 
   } catch (erro) {
     console.error(erro);
 
     return res.status(500).json({
-      erro: "Erro ao listar lançamentos"
+      erro: "Erro ao consultar lançamentos"
     });
   }
 });
