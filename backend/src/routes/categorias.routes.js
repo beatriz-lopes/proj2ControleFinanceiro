@@ -67,3 +67,34 @@ router.post("/", async (req, res) => {
         });
     }
 });
+
+// Listar categoria específica (por ID)
+router.get("/:id", async (req, res) => {
+    try{
+        const usuarioId = req.user.id;
+        const { id } = req.params;
+        const resultado = await pool.query(
+            `
+            SELECT *
+            FROM categorias
+            WHERE id = $1
+            AND usuario_id = $2
+            `,
+            [id, usuarioId]
+        );
+
+        if(resultado.rows.length === 0){
+            return res.status(404).json({
+                erro: "Categoria não encontrada"
+            });
+        }
+        return res.status(200).json(resultado.rows[0]);
+    } catch (erro){
+        console.error(erro);
+
+        return res.status(500).json({
+            erro: "Erro ao listar categoria"
+        });
+    }
+});
+
