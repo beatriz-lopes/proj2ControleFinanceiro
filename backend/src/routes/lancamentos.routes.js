@@ -3,7 +3,7 @@ const router = express.Router();
 
 const pool = require('../config/db');
 
-// Listar lançamentos + Filtros por paginação
+// Listar lançamentos + Filtros e paginação
 router.get("/", async (req, res) => {
   try{
     const usuarioId = req.user.id;
@@ -263,6 +263,92 @@ router.delete("/:id", async (req, res) => {
 
     return res.status(500).json({
       erro: "Erro ao excluir lançamento"
+    });
+  }
+});
+
+/*********************/
+
+
+// Criar resumo financeiro
+router.get("/resumo", async (req, res) => {
+  try{
+    const usuarioId = req.user.id;
+    const resultado = await pool.query(
+      `
+      SELECT
+
+        COALESCE(
+          SUM(valor) FILTER (
+            WHERE tipo = 'receita'
+          ), 0
+        ) AS entradas,
+
+        COALESCE(
+          SUM(valor) FILTER (
+            WHERE tipo = 'despesa'
+          ), 0
+        ) AS saidas
+
+       FROM lancamentos
+
+       WHERE usuario_id = $1
+       `,
+      [usuarioId]
+    );
+
+    const entradas = Number(resultado.rows[0].entradas);
+    const saidas = Number(resultado.rows[0].saidas);
+    const saldo = entradas - saidas;
+
+    return res.json({
+      entradas,
+      saidas,
+      saldo
+    });
+
+  } catch (erro) {
+    console.error(erro);
+
+    return res.status(500).json({
+      erro: "Erro ao calcular resumo financeiro"
+    });
+  }
+});
+
+// Criar gastos por categoria
+router.get("/por-categoria", async (req, res) => {
+  try{
+    const resultado = await pool.query(
+      `
+      SELECT
+        c.id,
+        c.nome,
+        COALESCE(SUM(l.valor), 0) AS total
+
+       FROM categorias c
+
+       LEFT JOIN lancamentos l
+         ON l.categoria_id = c.id
+         AND l.usuario_id = $1
+         AND l.tipo = 'despesa'
+
+       WHERE c.usuario_id = $1
+       AND c.tipo = 'despesa'
+
+       GROUP BY c.id, c.nome
+
+       ORDER BY total DESC
+       `,
+      [req.user.id]
+    );
+    return res.json(resultado.rows);
+
+  } catch (erro) {
+    console.error(erro);
+
+    return res.status(500).json({
+      erro: "Erro ao calcular gastos por categoria"
     });
   }
 });
