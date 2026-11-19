@@ -66,3 +66,98 @@ router.post("/", async (req, res) => {
         });
     }
 });
+
+// Listar fonte/destino específico (por ID)
+router.get("/:id", async (req, res) => {
+  try{
+    const resultado = await pool.query(
+      `
+      SELECT *
+       FROM fontes_destinos
+       WHERE id = $1
+       AND usuario_id = $2
+       `,
+      [req.params.id, req.user.id]
+    );
+
+    if (!resultado.rows.length) {
+      return res.status(404).json({
+        erro: "Fonte/destino não encontrado"
+      });
+    }
+    return res.json(resultado.rows[0]);
+
+  } catch (erro) {
+    return res.status(500).json({
+      erro: "Erro ao listar fonte/destino"
+    });
+  }
+});
+
+// Editar fonte/destino
+router.put("/:id", async (req, res) => {
+  try{
+    const { nome, tipo, descricao } = req.body;
+
+    if (!nome?.trim() || !["fonte", "destino"].includes(tipo)) {
+      return res.status(400).json({
+        erro: "Dados inválidos"
+      });
+    }
+
+    const resultado = await pool.query(
+      `
+      UPDATE fontes_destinos
+       SET nome = $1, tipo = $2, descricao = $3
+       WHERE id = $4 AND usuario_id = $5
+       RETURNING *
+       `,
+      [
+        nome.trim(), tipo, descricao || null, 
+        req.params.id, req.user.id
+      ]
+    );
+
+    if (!resultado.rows.length) {
+      return res.status(404).json({
+        erro: "Fonte/destino não encontrado"
+      });
+    }
+    return res.json(resultado.rows[0]);
+
+  } catch (erro) {
+    return res.status(500).json({
+      erro: "Erro ao atualizar fonte/destino"
+    });
+  }
+});
+
+// Deletar/ Excluir fonte/destino
+router.delete("/:id", async (req, res) => {
+  try{
+    const resultado = await pool.query(
+      `
+      DELETE FROM fontes_destinos
+       WHERE id = $1 AND usuario_id = $2
+       RETURNING *
+       `,
+      [req.params.id, req.user.id]
+    );
+
+    if (!resultado.rows.length) {
+      return res.status(404).json({
+        erro: "Fonte/destino não encontrado"
+      });
+    }
+    return res.json({
+      mensagem: "Fonte/destino excluído"
+    });
+
+  } catch (erro) {
+    return res.status(409).json({
+      erro: "Erro ao excluir fonte/destino. Verifique os vínculos."
+    });
+  }
+});
+
+module.exports = router;
