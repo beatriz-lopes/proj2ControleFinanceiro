@@ -31,9 +31,9 @@ router.get("/", async (req, res) => {
 router.post("/", async (req, res) => {
     try{
         const usuarioId = req.user.id;
-        const {nome, tipo, descricao} = req.body;
+        const { nome, tipo, descricao } = req.body;
 
-        if(!nome || nome.trim()){
+        if(!nome || !nome.trim()){
             return res.status(400).json({
                 erro: "O campo nome é obrigatório"
             });
@@ -52,7 +52,7 @@ router.post("/", async (req, res) => {
             VALUES ($1, $2, $3, $4)
             RETURNING *
             `,
-            [usuarioId, nome.trim(), tipo, decricao || null]
+            [usuarioId, nome.trim(), tipo, descricao || null]
         );
         return res.status(200).json({
             mensagem: "Categoria criada com sucesso",
@@ -98,3 +98,44 @@ router.get("/:id", async (req, res) => {
     }
 });
 
+// Editar categoria
+router.put("/:id", async (req, res) => {
+    try{
+        const usuarioId = req.user.id;
+        const { id } = req.params;
+        const { nome, tipo, descricao } = req.body;
+
+        if(!nome || !nome.trim()){
+            return res.status(400).json({
+                erro: "O campo nome é obrigatório"
+            });
+        }
+
+        if(!["receita", "despesa"].includes(tipo)){
+            return res.status(400).json({
+                erro: "Tipo de categoria inválida"
+            });
+        }
+
+        const resultado = await pool.query(
+            `
+            UPDATE categorias
+            SET nome = $1, tipo = $2, descricao = $3
+            WHERE id = $4
+            AND usuario_id = $5
+            RETURNING *
+            `,
+            [nome.trim(), tipo, descricao || null, id, usuarioId]
+        );
+        return res.status(200).json({
+            mensagem: "Categoria atualizada com sucesso",
+            categoria: resultado.rows[0]
+        });
+    } catch (erro){
+        console.error(erro);
+
+        return res.status(500).json({
+            erro: "Erro ao atualizar categoria"
+        });
+    }
+});
