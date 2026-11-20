@@ -135,5 +135,5 @@ No back-end, basta `throw new HttpError(status, mensagem, fields)` (de `middlewa
 | Integrante | Responsabilidade |
 |---|---|
 | Pessoa 1 | Estrutura, banco, usuários e autenticação |
-| Pessoa 2 | Categorias, fontes/destinos e lançamentos |
+| Nádia Akemi Yuzawa | Categorias, fontes/destinos e lançamentos |
 | Pessoa 3 | Relatórios, faturas e saúde financeira |

@@ -34,14 +34,29 @@ function validateCategory(body) {
   return { name, type };
 }
 
-// Listar categorias
+// Listar categorias com filtro opcional por tipo.
 router.get('/', async (req, res) => {
-  const categories = await Categories.findAll(req.userId);
+  const type = req.query.type || null;
+
+  if (type && !VALID_TYPES.includes(type)) {
+    throw new HttpError(
+      400,
+      'Tipo de categoria inválido.',
+      {
+        type: 'Informe income ou expense.'
+      }
+    );
+  }
+
+  const categories = await Categories.findAll(
+    req.userId,
+    type
+  );
 
   res.json(categories);
 });
 
-// Consultar categoria
+// Consultar categoria.
 router.get('/:id', async (req, res) => {
   const category = await Categories.findById(
     req.params.id,
@@ -49,13 +64,16 @@ router.get('/:id', async (req, res) => {
   );
 
   if (!category) {
-    throw new HttpError(404, 'Categoria não encontrada.');
+    throw new HttpError(
+      404,
+      'Categoria não encontrada.'
+    );
   }
 
   res.json(category);
 });
 
-// Criar categoria
+// Criar categoria.
 router.post('/', async (req, res) => {
   const data = validateCategory(req.body);
 
@@ -71,7 +89,9 @@ router.post('/', async (req, res) => {
       throw new HttpError(
         409,
         'Já existe uma categoria com esse nome e tipo.',
-        { name: 'Categoria já cadastrada.' }
+        {
+          name: 'Categoria já cadastrada.'
+        }
       );
     }
 
@@ -79,7 +99,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Atualizar categoria
+// Atualizar categoria.
 router.put('/:id', async (req, res) => {
   const data = validateCategory(req.body);
 
@@ -91,7 +111,10 @@ router.put('/:id', async (req, res) => {
     );
 
     if (!category) {
-      throw new HttpError(404, 'Categoria não encontrada.');
+      throw new HttpError(
+        404,
+        'Categoria não encontrada.'
+      );
     }
 
     res.json(category);
@@ -100,7 +123,9 @@ router.put('/:id', async (req, res) => {
       throw new HttpError(
         409,
         'Já existe uma categoria com esse nome e tipo.',
-        { name: 'Categoria já cadastrada.' }
+        {
+          name: 'Categoria já cadastrada.'
+        }
       );
     }
 
@@ -115,7 +140,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// Excluir categoria
+// Excluir categoria.
 router.delete('/:id', async (req, res) => {
   try {
     const category = await Categories.remove(
@@ -124,7 +149,10 @@ router.delete('/:id', async (req, res) => {
     );
 
     if (!category) {
-      throw new HttpError(404, 'Categoria não encontrada.');
+      throw new HttpError(
+        404,
+        'Categoria não encontrada.'
+      );
     }
 
     res.status(204).end();

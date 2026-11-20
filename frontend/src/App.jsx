@@ -1,9 +1,15 @@
+
 import { Navigate, Route, Routes } from 'react-router';
+
 import Layout from './components/Layout.jsx';
 import LoginPage from './components/LoginPage.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import RegisterPage from './components/RegisterPage.jsx';
 import UnderConstruction from './components/UnderConstruction.jsx';
+
+import CategoriesPage from './components/CategoriesPage.jsx';
+import TransactionsPage from './components/TransactionsPage.jsx';
+import AccountsPage from './components/AccountsPage.jsx';
 
 export default function App() {
   return (
@@ -13,17 +19,22 @@ export default function App() {
 
       <Route element={<ProtectedRoute />}>
         <Route element={<Layout />}>
-          <Route index element={<UnderConstruction title="Resumo do mês" />} />
-          <Route path="transactions" element={<UnderConstruction title="Lançamentos" />} />
-          <Route path="categories" element={<UnderConstruction title="Categorias" />} />
-          <Route path="accounts" element={<UnderConstruction title="Fontes e destinos" />} />
-          <Route path="reports" element={<UnderConstruction title="Relatórios" />} />
-          <Route path="invoices" element={<UnderConstruction title="Faturas" />} />
-          <Route path="financial-health" element={<UnderConstruction title="Saúde financeira" />} />
+
+          <Route index element={<UnderConstruction title="Resumo do mês" />}/>
+          <Route path="transactions" element={<TransactionsPage />} />
+          <Route path="categories" element={<CategoriesPage />}/>
+          <Route path="accounts" element={<AccountsPage />}/>
+
+          <Route path="reports" element={<UnderConstruction title="Relatórios" />}/>
+
+          <Route path="invoices" element={<UnderConstruction title="Faturas" />}/>
+
+          <Route path="financial-health" element={<UnderConstruction title="Saúde financeira" />}/>
+
         </Route>
       </Route>
 
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<Navigate to="/" replace />}/>
     </Routes>
   );
 }
