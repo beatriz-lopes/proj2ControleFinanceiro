@@ -6,6 +6,7 @@ import { HttpError } from '../middlewares/errors.js';
 import { isValidDate } from '../models/validation.js';
 
 import * as Reports from '../models/reports.model.js';
+import * as Invoices from '../models/invoices.model.js';
 
 const router = Router();
 
@@ -191,5 +192,33 @@ router.get('/accounts', async (req, res) => {
   return res.json(report);
 });
 
+
+// RF9 - Previsão de faturas.
+
+router.get('/invoices', async (req, res) => {
+  const months = Number(req.query.months ?? 3);
+
+  // Exige pelo menos 3 faturas futuras.
+  if (
+    !Number.isInteger(months) ||
+    months < 3 ||
+    months > 12
+  ) {
+    throw new HttpError(
+      400,
+      'Quantidade de meses inválida.',
+      {
+        months: 'Informe um valor inteiro entre 3 e 12.'
+      }
+    );
+  }
+
+  const forecast = await Invoices.getInvoiceForecast(
+    req.userId,
+    months
+  );
+
+  return res.json(forecast);
+});
 
 export default router;
