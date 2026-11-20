@@ -157,46 +157,18 @@ th {
   height: 38px;
 }
 
-.reports-chart {
-  display: flex;
-  flex-direction: column;
-  gap: 1.2rem;
-}
-
-.reports-chart-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-
-.reports-chart-label {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  font-size: 0.9rem;
-}
-
-.reports-chart-track {
-  width: 100%;
-  height: 18px;
-  background: #e9edf3;
-  border-radius: 5px;
-  overflow: hidden;
-}
-
-.reports-chart-bar {
-  height: 100%;
-  background: var(--primary);
-  border-radius: 5px;
-}
-
-.reports-chart-item small {
-  color: var(--muted);
-}
-
 .reports-page .table-container {
   margin-top: 1rem;
 }
+
+.reports-period-comparison {
+  margin: 1rem 0;
+}
+
+.reports-period-comparison p {
+  margin: 0.25rem 0;
+}
+
 
 @media (max-width: 700px) {
   .reports-filters {
@@ -206,5 +178,27 @@ th {
 
   .reports-filters .field {
     width: 100%;
+  }
+}
+
+/* Gráfico Recharts — RF7 */
+
+.category-chart {
+  width: 100%;
+  min-width: 0;
+  margin-top: 1.5rem;
+}
+
+.category-chart .recharts-tooltip-wrapper {
+  outline: none;
+}
+
+@media (max-width: 600px) {
+  .category-chart {
+    overflow-x: auto;
+  }
+
+  .category-chart > .recharts-responsive-container {
+    min-width: 420px;
   }
 }

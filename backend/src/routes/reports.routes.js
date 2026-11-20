@@ -18,15 +18,51 @@ function formatDate(date) {
 }
 
 // Calcula o período anterior com a mesma duração.
+
 function getPreviousPeriod(start, end) {
   const startDate = new Date(`${start}T00:00:00Z`);
   const endDate = new Date(`${end}T00:00:00Z`);
 
+  const year = startDate.getUTCFullYear();
+  const month = startDate.getUTCMonth();
+
   const dayMilliseconds = 24 * 60 * 60 * 1000;
 
+  // Verifica se o usuário selecionou um mês completo.
+  const firstDayOfMonth = new Date(
+    Date.UTC(year, month, 1)
+  );
+
+  const lastDayOfMonth = new Date(
+    Date.UTC(year, month + 1, 0)
+  );
+
+  const isFullMonth =
+    start === formatDate(firstDayOfMonth) &&
+    end === formatDate(lastDayOfMonth);
+
+  // Caso 1: mês completo.
+  // Compara com o mês calendário anterior.
+  if (isFullMonth) {
+    const previousStart = new Date(
+      Date.UTC(year, month - 1, 1)
+    );
+
+    const previousEnd = new Date(
+      Date.UTC(year, month, 0)
+    );
+
+    return {
+      previousStart: formatDate(previousStart),
+      previousEnd: formatDate(previousEnd)
+    };
+  }
+
+  // Caso 2: período personalizado.
+  // Compara com um intervalo de mesma duração.
   const days = Math.round(
-    (endDate.getTime() - startDate.getTime())
-    / dayMilliseconds
+    (endDate.getTime() - startDate.getTime()) /
+    dayMilliseconds
   ) + 1;
 
   const previousEnd = new Date(
@@ -42,6 +78,7 @@ function getPreviousPeriod(start, end) {
     previousEnd: formatDate(previousEnd)
   };
 }
+
 
 // GET /api/reports/categories?start=2026-10-01&end=2026-10-31
 router.get('/categories', async (req, res) => {

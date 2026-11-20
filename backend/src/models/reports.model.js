@@ -61,7 +61,9 @@ export async function reportByCategory(
  
   const expenses = rows.filter(
     (row) => row.type === 'expense' &&
-      Number(row.current_cents) > 0
+      (
+        Number(row.current_cents) > 0 || Number(row.previous_cents) > 0
+      )
   );
 
   const incomes = rows.filter(

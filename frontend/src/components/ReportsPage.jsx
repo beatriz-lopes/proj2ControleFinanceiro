@@ -1,19 +1,19 @@
-
-import { useEffect, useState } from 'react';
-import { getCategoryReport } from '../services/reports.js';
+import { useEffect, useState } from "react";
+import { getCategoryReport } from "../services/reports.js";
+import CategoryExpensesChart from "./CategoryExpensesChart.jsx";
 
 // Formata números no padrão brasileiro.
 const money = (value) =>
-  Number(value ?? 0).toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL'
+  Number(value ?? 0).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
   });
 
 // Formata datas AAAA-MM-DD para DD/MM/AAAA.
 function formatDate(date) {
-  if (!date) return '';
+  if (!date) return "";
 
-  const [year, month, day] = date.split('-');
+  const [year, month, day] = date.split("-");
   return `${day}/${month}/${year}`;
 }
 
@@ -23,10 +23,10 @@ function getCurrentMonth() {
   const year = today.getFullYear();
   const month = today.getMonth() + 1;
 
-  const start = `${year}-${String(month).padStart(2, '0')}-01`;
+  const start = `${year}-${String(month).padStart(2, "0")}-01`;
 
   const lastDay = new Date(year, month, 0).getDate();
-  const end = `${year}-${String(month).padStart(2, '0')}-${lastDay}`;
+  const end = `${year}-${String(month).padStart(2, "0")}-${lastDay}`;
 
   return { start, end };
 }
@@ -36,12 +36,12 @@ export default function ReportsPage() {
 
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   // Busca os dados do relatório no back-end.
   async function loadReport(start, end) {
     setLoading(true);
-    setError('');
+    setError("");
 
     try {
       const data = await getCategoryReport(start, end);
@@ -65,7 +65,7 @@ export default function ReportsPage() {
     event.preventDefault();
 
     if (filters.start > filters.end) {
-      setError('A data inicial não pode ser posterior à final.');
+      setError("A data inicial não pode ser posterior à final.");
       return;
     }
 
@@ -75,29 +75,25 @@ export default function ReportsPage() {
   // Mostra o percentual de aumento ou redução.
   function formatVariation(value) {
     if (value === null || value === undefined) {
-      return 'Sem base anterior';
+      return "Sem base anterior";
     }
 
     if (value > 0) return `+${value.toFixed(2)}%`;
     if (value < 0) return `${value.toFixed(2)}%`;
 
-    return '0,00%';
+    return "0,00%";
   }
 
   const expenses = report?.categories ?? [];
   const incomes = report?.incomeCategories ?? [];
 
-  const balance = report
-    ? report.totalIncome - report.totalExpenses
-    : 0;
+  const balance = report ? report.totalIncome - report.totalExpenses : 0;
 
   return (
     <section className="reports-page">
       <h1>Relatórios financeiros</h1>
 
-      <p className="status">
-        Analise suas receitas e despesas por categoria.
-      </p>
+      <p className="status">Analise suas receitas e despesas por categoria.</p>
 
       {/* Filtro de período */}
       <form className="card" onSubmit={handleFilter}>
@@ -114,7 +110,7 @@ export default function ReportsPage() {
               onChange={(event) =>
                 setFilters({
                   ...filters,
-                  start: event.target.value
+                  start: event.target.value,
                 })
               }
             />
@@ -130,7 +126,7 @@ export default function ReportsPage() {
               onChange={(event) =>
                 setFilters({
                   ...filters,
-                  end: event.target.value
+                  end: event.target.value,
                 })
               }
             />
@@ -159,7 +155,7 @@ export default function ReportsPage() {
         <>
           <p className="status">
             Período: {formatDate(report.period.start)}
-            {' a '}
+            {" a "}
             {formatDate(report.period.end)}
           </p>
 
@@ -191,30 +187,16 @@ export default function ReportsPage() {
               </p>
             ) : (
               <div className="reports-chart">
-                {expenses.map((category) => (
-                  <div
-                    className="reports-chart-item"
-                    key={category.id}
-                  >
-                    <div className="reports-chart-label">
-                      <span>{category.name}</span>
-                      <strong>{money(category.total)}</strong>
-                    </div>
+                {/* Gráfico de despesas por categoria */}
+                <article className="card">
+                  <h2>Gastos por categoria</h2>
 
-                    <div className="reports-chart-track">
-                      <div
-                        className="reports-chart-bar"
-                        style={{
-                          width: `${category.percentage}%`
-                        }}
-                      />
-                    </div>
+                  <p className="status">
+                    Distribuição das despesas no período selecionado.
+                  </p>
 
-                    <small>
-                      {category.percentage.toFixed(2)}%
-                    </small>
-                  </div>
-                ))}
+                  <CategoryExpensesChart categories={expenses} />
+                </article>
               </div>
             )}
           </article>
@@ -223,18 +205,24 @@ export default function ReportsPage() {
           <article className="card">
             <h2>Despesas por categoria</h2>
 
-            <p className="status">
-              Comparação com o período anterior:
-              {' '}
-              {formatDate(report.previousPeriod.start)}
-              {' a '}
-              {formatDate(report.previousPeriod.end)}
-            </p>
+            <div className="reports-period-comparison">
+              <p className="status">
+                <strong>Período atual:</strong>{" "}
+                {formatDate(report.period.start)}
+                {" a "}
+                {formatDate(report.period.end)}
+              </p>
+
+              <p className="status">
+                <strong>Período anterior:</strong>{" "}
+                {formatDate(report.previousPeriod.start)}
+                {" a "}
+                {formatDate(report.previousPeriod.end)}
+              </p>
+            </div>
 
             {expenses.length === 0 ? (
-              <p className="status">
-                Não existem despesas para apresentar.
-              </p>
+              <p className="status">Não existem despesas para apresentar.</p>
             ) : (
               <div className="table-container">
                 <table>
@@ -253,13 +241,9 @@ export default function ReportsPage() {
                       <tr key={category.id}>
                         <td>{category.name}</td>
                         <td>{money(category.total)}</td>
-                        <td>
-                          {category.percentage.toFixed(2)}%
-                        </td>
+                        <td>{category.percentage.toFixed(2)}%</td>
                         <td>{money(category.previousTotal)}</td>
-                        <td>
-                          {formatVariation(category.variation)}
-                        </td>
+                        <td>{formatVariation(category.variation)}</td>
                       </tr>
                     ))}
                   </tbody>
