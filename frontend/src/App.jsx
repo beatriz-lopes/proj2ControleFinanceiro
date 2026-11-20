@@ -11,6 +11,8 @@ import CategoriesPage from './components/CategoriesPage.jsx';
 import TransactionsPage from './components/TransactionsPage.jsx';
 import AccountsPage from './components/AccountsPage.jsx';
 
+import ReportsPage from './components/ReportsPage.jsx';
+
 export default function App() {
   return (
     <Routes>
@@ -25,7 +27,7 @@ export default function App() {
           <Route path="categories" element={<CategoriesPage />}/>
           <Route path="accounts" element={<AccountsPage />}/>
 
-          <Route path="reports" element={<UnderConstruction title="Relatórios" />}/>
+          <Route path="reports" element={<ReportsPage />}/>
 
           <Route path="invoices" element={<UnderConstruction title="Faturas" />}/>
 
