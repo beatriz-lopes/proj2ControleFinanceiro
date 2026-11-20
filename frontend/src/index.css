@@ -271,3 +271,107 @@ th {
   outline: 2px solid #2f6fde;
   outline-offset: 2px;
 }
+
+/* RF9 - Previsão de faturas */
+
+.invoices-page h2 {
+  font-size: 1.15rem;
+  margin-bottom: 1rem;
+}
+
+.invoice-limit-track {
+  width: 100%;
+  height: 16px;
+  background: #e9edf3;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.invoice-limit-bar {
+  height: 100%;
+  background: var(--primary);
+  border-radius: 8px;
+  transition: width 0.2s ease;
+}
+
+.invoice-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.invoice-item {
+  margin-bottom: 0;
+}
+
+.invoice-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  cursor: pointer;
+}
+
+.invoice-summary-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.invoice-summary-info strong {
+  text-transform: uppercase;
+}
+
+.invoice-summary-info .status {
+  font-size: 0.85rem;
+}
+
+.invoice-details {
+  border-top: 1px solid var(--border);
+  margin-top: 1rem;
+  padding-top: 1rem;
+}
+
+.invoice-dates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 2rem;
+  font-size: 0.9rem;
+}
+
+.invoice-total {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  border-top: 1px solid var(--border);
+  padding-top: 1rem;
+  margin-top: 1rem;
+}
+
+.invoice-disclaimer {
+  font-size: 0.85rem;
+  margin-top: 1.5rem;
+}
+
+.invoice-open {
+  border-left: 4px solid #2f6fde;
+}
+
+@media (max-width: 700px) {
+  .invoices-page .summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .invoice-summary {
+    align-items: flex-start;
+  }
+
+  .invoice-details .table-container {
+    overflow-x: auto;
+  }
+
+  .invoice-details table {
+    min-width: 550px;
+  }
+}

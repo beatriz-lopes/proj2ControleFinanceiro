@@ -1,4 +1,3 @@
-
 import { get } from './api.js';
 
 export function getCategoryReport(start, end) {
@@ -13,4 +12,8 @@ export function getAccountReport(start, end) {
     start,
     end
   });
+}
+
+export function getInvoiceForecast(months = 3) {
+  return get('/reports/invoices', { months });
 }

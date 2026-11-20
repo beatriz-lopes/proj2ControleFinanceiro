@@ -12,6 +12,7 @@ import TransactionsPage from './components/TransactionsPage.jsx';
 import AccountsPage from './components/AccountsPage.jsx';
 
 import ReportsPage from './components/ReportsPage.jsx';
+import InvoicesPage from './components/InvoicesPage.jsx';
 
 export default function App() {
   return (
@@ -29,7 +30,7 @@ export default function App() {
 
           <Route path="reports" element={<ReportsPage />}/>
 
-          <Route path="invoices" element={<UnderConstruction title="Faturas" />}/>
+          <Route path="invoices" element={<InvoicesPage />} />
 
           <Route path="financial-health" element={<UnderConstruction title="Saúde financeira" />}/>
 
