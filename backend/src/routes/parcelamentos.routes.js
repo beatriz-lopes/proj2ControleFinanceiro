@@ -1,7 +1,9 @@
-const express = require('express');
-const router = express.Router();
+import { Router } from 'express';
+import { pool } from '../config/db.js';
+import { authenticate } from '../middlewares/authenticate.js';
+import { HttpError } from '../middlewares/errors.js';
 
-const pool = require('../config/db');
+const router = Router();
 
 function calcularParcelas(valorTotal, quantidade) {
   const centavos = Math.round(valorTotal * 100);
@@ -70,7 +72,7 @@ router.get("/futuros", async (req, res) => {
 
        ORDER BY p.data_vencimento ASC
        `,
-      [req.user.id]
+      [req.userId]
     );
     return res.json(resultado.rows);
 
@@ -90,7 +92,7 @@ router.post("/", async (req, res) => {
   const client = await pool.connect();
 
   try{
-    const usuarioId = req.user.id;
+    const usuarioId = req.userId;
     const { descricao, valor_total, quantidade_parcelas, data_primeira_parcela, categoria_id, fonte_destino_id} = req.body;
 
     if (!descricao?.trim()) {

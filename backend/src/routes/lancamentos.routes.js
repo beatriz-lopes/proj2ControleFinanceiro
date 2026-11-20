@@ -1,12 +1,14 @@
-const express = require('express');
-const router = express.Router();
+import { Router } from 'express';
+import { pool } from '../config/db.js';
+import { authenticate } from '../middlewares/authenticate.js';
+import { HttpError } from '../middlewares/errors.js';
 
-const pool = require('../config/db');
+const router = Router();
 
 // Listar lançamentos + Filtros e paginação
 router.get("/", async (req, res) => {
   try{
-    const usuarioId = req.user.id;
+    const usuarioId = req.userId;
     const { tipo, categoria_id, dataInicio, dataFim, page = 1, limit = 10 } = req.query;
 
     const pagina = Math.max(1, Number(page));
@@ -112,7 +114,7 @@ router.get("/", async (req, res) => {
 // Cadastrar/ Criar lançamentos
 router.post("/", async (req, res) => {
   try{
-    const usuarioId = req.user.id;
+    const usuarioId = req.userId;
     const { descricao, tipo, valor, data, categoria_id, fonte_destino_id, observacao } = req.body;
 
     if (!descricao || !descricao.trim()) {
@@ -219,7 +221,7 @@ router.get("/:id", async (req, res) => {
        WHERE l.id = $1
        AND l.usuario_id = $2
        `,
-      [req.params.id, req.user.id]
+      [req.params.id, req.userId]
     );
 
     if (!resultado.rows.length) {
@@ -246,7 +248,7 @@ router.delete("/:id", async (req, res) => {
        AND usuario_id = $2
        RETURNING *
        `,
-      [req.params.id, req.user.id]
+      [req.params.id, req.userId]
     );
 
     if (!resultado.rows.length) {
@@ -273,7 +275,7 @@ router.delete("/:id", async (req, res) => {
 // Criar resumo financeiro
 router.get("/resumo", async (req, res) => {
   try{
-    const usuarioId = req.user.id;
+    const usuarioId = req.userId;
     const resultado = await pool.query(
       `
       SELECT
@@ -340,7 +342,7 @@ router.get("/por-categoria", async (req, res) => {
 
        ORDER BY total DESC
        `,
-      [req.user.id]
+      [req.userId]
     );
     return res.json(resultado.rows);
 

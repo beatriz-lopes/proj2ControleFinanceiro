@@ -1,12 +1,14 @@
-const express = require('express');
-const router = express.Router();
+import { Router } from 'express';
+import { pool } from '../config/db.js';
+import { authenticate } from '../middlewares/authenticate.js';
+import { HttpError } from '../middlewares/errors.js';
 
-const pool = require('../config/db');
+const router = Router();
 
 // Listar fontes e destinos
 router.get("/", async (req, res) => {
   try{
-    const usuarioId = req.user.id;
+    const usuarioId = req.userId;
     const resultado = await pool.query(
       `
       SELECT *
@@ -30,7 +32,7 @@ router.get("/", async (req, res) => {
 // Cadastrar/ Criar fonte ou destino
 router.post("/", async (req, res) => {
     try{
-        const usuarioId = req.user.id;
+        const usuarioId = req.userId;
         const { nome, tipo, descricao } = req.body;
 
         if(!nome || !nome.trim()){
@@ -77,7 +79,7 @@ router.get("/:id", async (req, res) => {
        WHERE id = $1
        AND usuario_id = $2
        `,
-      [req.params.id, req.user.id]
+      [req.params.id, req.userId]
     );
 
     if (!resultado.rows.length) {
@@ -114,7 +116,7 @@ router.put("/:id", async (req, res) => {
        `,
       [
         nome.trim(), tipo, descricao || null, 
-        req.params.id, req.user.id
+        req.params.id, req.userId
       ]
     );
 
@@ -141,7 +143,7 @@ router.delete("/:id", async (req, res) => {
        WHERE id = $1 AND usuario_id = $2
        RETURNING *
        `,
-      [req.params.id, req.user.id]
+      [req.params.id, req.userId]
     );
 
     if (!resultado.rows.length) {
