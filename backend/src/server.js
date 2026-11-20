@@ -6,6 +6,7 @@ import authRoutes from './routes/auth.routes.js';
 import categoriesRoutes from './routes/categories.routes.js';
 import accountsRoutes from './routes/accounts.routes.js';
 import transactionsRoutes from './routes/transactions.routes.js';
+import reportsRoutes from './routes/reports.routes.js';
 
 const app = express();
 
@@ -20,6 +21,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/categories', categoriesRoutes);
 app.use('/api/accounts', accountsRoutes);
 app.use('/api/transactions', transactionsRoutes);
+app.use('/api/reports', reportsRoutes);
 
 // Protected routes (Persons 2 and 3): register them with the authenticate middleware, e.g.:
 //   import { authenticate } from './middlewares/authenticate.js';
