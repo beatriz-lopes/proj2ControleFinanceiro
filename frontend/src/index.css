@@ -202,3 +202,72 @@ th {
     min-width: 420px;
   }
 }
+
+
+/* RF8 - Relatório por fonte/destino */
+
+.accounts-report {
+  margin-top: 1rem;
+}
+
+.accounts-chart {
+  width: 100%;
+  min-width: 0;
+  margin-top: 1.5rem;
+}
+
+.accounts-report .table-container {
+  overflow-x: auto;
+}
+
+.accounts-report table {
+  min-width: 650px;
+}
+
+@media (max-width: 600px) {
+  .accounts-chart {
+    overflow-x: auto;
+  }
+
+  .accounts-chart > .recharts-responsive-container {
+    min-width: 450px;
+  }
+}
+
+
+/* Abas dos relatórios */
+
+.reports-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 24px 0;
+  padding: 6px;
+  background: #e9edf3;
+  border-radius: 8px;
+}
+
+.reports-tabs button {
+  flex: 1;
+  padding: 12px 16px;
+  background: transparent;
+  color: #50596a;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.reports-tabs button.active {
+  background: #ffffff;
+  color: #2f6fde;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.reports-tabs button:hover:not(.active) {
+  background: #dce3ef;
+}
+
+.reports-tabs button:focus-visible {
+  outline: 2px solid #2f6fde;
+  outline-offset: 2px;
+}

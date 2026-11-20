@@ -137,4 +137,59 @@ router.get('/categories', async (req, res) => {
   return res.json(report);
 });
 
+
+// RF8 - Relatório por fonte/destino.
+
+router.get('/accounts', async (req, res) => {
+  const now = new Date();
+
+  const year = now.getFullYear();
+  const month = now.getMonth();
+
+  // Por padrão, consulta o mês atual.
+  const defaultStart =
+    `${year}-${String(month + 1).padStart(2, '0')}-01`;
+
+  const defaultEnd = formatDate(
+    new Date(Date.UTC(year, month + 1, 0))
+  );
+
+  const start = req.query.start ?? defaultStart;
+  const end = req.query.end ?? defaultEnd;
+
+  // Valida os parâmetros recebidos.
+  const fields = {};
+
+  if (!isValidDate(start)) {
+    fields.start = 'Data inicial inválida.';
+  }
+
+  if (!isValidDate(end)) {
+    fields.end = 'Data final inválida.';
+  }
+
+  if (
+    isValidDate(start) &&
+    isValidDate(end) &&
+    start > end
+  ) {
+    fields.end =
+      'A data final não pode ser anterior à inicial.';
+  }
+
+  if (Object.keys(fields).length > 0) {
+    throw new HttpError(400, 'Período inválido.', fields);
+  }
+
+  // Consulta os dados do usuário autenticado.
+  const report = await Reports.reportByAccount(
+    req.userId,
+    start,
+    end
+  );
+
+  return res.json(report);
+});
+
+
 export default router;

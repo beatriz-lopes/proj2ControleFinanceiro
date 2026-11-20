@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getCategoryReport } from "../services/reports.js";
 import CategoryExpensesChart from "./CategoryExpensesChart.jsx";
+import AccountsReportSection from "./AccountsReportSection.jsx";
 
 // Formata números no padrão brasileiro.
 const money = (value) =>
@@ -37,6 +38,8 @@ export default function ReportsPage() {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const [activeTab, setActiveTab] = useState("categories");
 
   // Busca os dados do relatório no back-end.
   async function loadReport(start, end) {
@@ -93,7 +96,11 @@ export default function ReportsPage() {
     <section className="reports-page">
       <h1>Relatórios financeiros</h1>
 
-      <p className="status">Analise suas receitas e despesas por categoria.</p>
+      <p className="status">
+        {activeTab === "categories"
+          ? "Analise suas receitas e despesas por categoria."
+          : "Acompanhe entradas, saídas e saldos por fonte/destino."}
+      </p>
 
       {/* Filtro de período */}
       <form className="card" onSubmit={handleFilter}>
@@ -138,6 +145,32 @@ export default function ReportsPage() {
         </div>
       </form>
 
+      <div
+        className="reports-tabs"
+        role="tablist"
+        aria-label="Tipo de relatório"
+      >
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "categories"}
+          className={activeTab === "categories" ? "active" : ""}
+          onClick={() => setActiveTab("categories")}
+        >
+          Por categoria
+        </button>
+
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "accounts"}
+          className={activeTab === "accounts" ? "active" : ""}
+          onClick={() => setActiveTab("accounts")}
+        >
+          Por fonte/destino
+        </button>
+      </div>
+
       {/* Estados de carregamento e erro */}
       {loading && (
         <p className="status" role="status">
@@ -151,7 +184,7 @@ export default function ReportsPage() {
         </p>
       )}
 
-      {!loading && report && (
+      {!loading && report && activeTab === "categories" && (
         <>
           <p className="status">
             Período: {formatDate(report.period.start)}
@@ -181,24 +214,11 @@ export default function ReportsPage() {
           <article className="card">
             <h2>Gastos por categoria</h2>
 
-            {expenses.length === 0 ? (
-              <p className="status">
-                Nenhuma despesa encontrada neste período.
-              </p>
-            ) : (
-              <div className="reports-chart">
-                {/* Gráfico de despesas por categoria */}
-                <article className="card">
-                  <h2>Gastos por categoria</h2>
+            <p className="status">
+              Distribuição das despesas no período selecionado.
+            </p>
 
-                  <p className="status">
-                    Distribuição das despesas no período selecionado.
-                  </p>
-
-                  <CategoryExpensesChart categories={expenses} />
-                </article>
-              </div>
-            )}
+            <CategoryExpensesChart categories={expenses} />
           </article>
 
           {/* Tabela comparativa */}
@@ -283,6 +303,16 @@ export default function ReportsPage() {
             )}
           </article>
         </>
+      )}
+
+      {/* RF8 - Relatório por fonte/destino */}
+      {!loading && report && activeTab === "accounts" && (
+        <section aria-label="Relatório por fonte e destino">
+          <AccountsReportSection
+            start={report.period.start}
+            end={report.period.end}
+          />
+        </section>
       )}
     </section>
   );

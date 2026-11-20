@@ -7,3 +7,10 @@ export function getCategoryReport(start, end) {
     end
   });
 }
+
+export function getAccountReport(start, end) {
+  return get('/reports/accounts', {
+    start,
+    end
+  });
+}

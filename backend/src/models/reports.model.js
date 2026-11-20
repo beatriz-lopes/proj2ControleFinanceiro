@@ -133,3 +133,90 @@ export async function reportByCategory(
     incomeCategories
   };
 }
+
+/** RF8 - Relatório por fonte/destino. */
+
+export async function reportByAccount(userId, start, end) {
+  const { rows } = await query(
+    `
+    SELECT
+      a.id,
+      a.name,
+      a.type,
+
+      COALESCE(
+        ROUND(SUM(t.amount) FILTER (
+          WHERE t.type = 'income'
+        ) * 100), 0
+      )::bigint AS income_cents,
+
+      COALESCE(
+        ROUND(SUM(t.amount) FILTER (
+          WHERE t.type = 'expense'
+        ) * 100), 0
+      )::bigint AS expense_cents
+
+    FROM accounts a
+
+    LEFT JOIN transactions t
+      ON t.account_id = a.id
+      AND t.user_id = a.user_id
+      AND t.date BETWEEN $2 AND $3
+
+    WHERE a.user_id = $1
+
+    GROUP BY a.id, a.name, a.type
+    ORDER BY a.name
+    `,
+    [userId, start, end]
+  );
+
+  // Converte os resultados para valores numéricos.
+  const accounts = rows.map((row) => {
+    const incomeCents = Number(row.income_cents);
+    const expenseCents = Number(row.expense_cents);
+
+    return {
+      id: row.id,
+      name: row.name,
+      type: row.type,
+
+      totalIncome: incomeCents / 100,
+      totalExpenses: expenseCents / 100,
+
+      // O saldo é exibido somente para contas.
+      balance: row.type === 'bank_account'
+        ? (incomeCents - expenseCents) / 100
+        : null
+    };
+  });
+
+  // Totais gerais, calculados em centavos.
+  const totalIncomeCents = rows.reduce(
+    (total, row) =>
+      total + Number(row.income_cents),
+    0
+  );
+
+  const totalExpenseCents = rows.reduce(
+    (total, row) =>
+      total + Number(row.expense_cents),
+    0
+  );
+
+  return {
+    period: {
+      start,
+      end
+    },
+
+    totalIncome: totalIncomeCents / 100,
+    totalExpenses: totalExpenseCents / 100,
+
+    balance:
+      (totalIncomeCents - totalExpenseCents) / 100,
+
+    accounts
+  };
+}
+
