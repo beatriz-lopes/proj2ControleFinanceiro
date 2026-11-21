@@ -14,6 +14,7 @@ import AccountsPage from './components/AccountsPage.jsx';
 import ReportsPage from './components/ReportsPage.jsx';
 import InvoicesPage from './components/InvoicesPage.jsx';
 import FinancialHealthPage from './components/FinancialHealthPage.jsx';
+import DashboardPage from './components/DashboardPage.jsx';
 
 export default function App() {
   return (
@@ -24,7 +25,7 @@ export default function App() {
       <Route element={<ProtectedRoute />}>
         <Route element={<Layout />}>
 
-          <Route index element={<UnderConstruction title="Resumo do mês" />}/>
+          <Route index element={<DashboardPage />} />
           <Route path="transactions" element={<TransactionsPage />} />
           <Route path="categories" element={<CategoriesPage />}/>
           <Route path="accounts" element={<AccountsPage />}/>

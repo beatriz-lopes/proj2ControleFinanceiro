@@ -468,3 +468,78 @@ th {
     min-width: 420px;
   }
 }
+
+
+/* Dashboard - Resumo financeiro */
+
+.dashboard-month-filter {
+  display: flex;
+  align-items: end;
+  gap: 1rem;
+}
+
+.dashboard-month-filter .field {
+  width: 100%;
+  max-width: 320px;
+  margin-bottom: 0;
+}
+
+.dashboard-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.dashboard-section-header h2 {
+  margin: 0;
+}
+
+.dashboard-section-header a,
+.dashboard-actions a {
+  color: #2f6fde;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.dashboard-section-header a:hover,
+.dashboard-actions a:hover {
+  text-decoration: underline;
+}
+
+.dashboard-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.dashboard-actions a {
+  padding: 0.75rem 1rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+}
+
+.dashboard-page .table-container {
+  overflow-x: auto;
+}
+
+.dashboard-installment {
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+@media (max-width: 700px) {
+  .dashboard-month-filter .field {
+    max-width: none;
+  }
+
+  .dashboard-actions {
+    flex-direction: column;
+  }
+
+  .dashboard-page table {
+    min-width: 600px;
+  }
+}
