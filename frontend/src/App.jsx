@@ -5,7 +5,6 @@ import Layout from './components/Layout.jsx';
 import LoginPage from './components/LoginPage.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import RegisterPage from './components/RegisterPage.jsx';
-import UnderConstruction from './components/UnderConstruction.jsx';
 
 import CategoriesPage from './components/CategoriesPage.jsx';
 import TransactionsPage from './components/TransactionsPage.jsx';

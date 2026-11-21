@@ -129,6 +129,15 @@ No back-end, basta `throw new HttpError(status, mensagem, fields)` (de `middlewa
   Centavos de diferença ficam na 1ª parcela.
 - Campo extra `accounts.emergency_reserve` (boolean) para o indicador de reserva de emergência.
 - `user_id` sempre vem do token (`req.userId`), nunca do corpo ou da URL. Registro de outro usuário → 404.
+- **Relatórios por categoria (RF7)**: os totais e percentuais são calculados no back-end, utilizando consultas SQL com `SUM` e `GROUP BY`. A comparação é feita com o período anterior, incluindo categorias que tiveram gastos apenas no período anterior. Meses completos são comparados com o mês anterior; intervalos personalizados utilizam a mesma quantidade de dias.
+- **Relatórios por fonte/destino (RF8)**: entradas e saídas são agrupadas por conta, cartão ou fonte de renda. O saldo é calculado apenas para contas bancárias, pela diferença entre entradas e saídas no período selecionado, não representando necessariamente o saldo bancário atual.
+- **Previsão de faturas (RF9)**: cada parcela é associada a uma fatura considerando a data original da compra, o dia de fechamento e o número da parcela. Compras realizadas no dia do fechamento ou depois entram na fatura seguinte. O vencimento é calculado conforme as configurações do cartão, ajustando datas inexistentes para o último dia do mês.
+- **Limite dos cartões**: o limite utilizado é estimado pela soma das parcelas com vencimento ainda não ocorrido. Como o sistema não registra pagamentos de faturas, os valores de limite utilizado e disponível são estimativas.
+- **Indicadores de saúde financeira**: a taxa de poupança e a taxa de despesas são calculadas a partir das receitas e despesas do mês atual. O comprometimento com cartões considera o valor das faturas previstas para os próximos três meses em relação à renda média estimada para esse período.
+- **Projeção financeira**: utiliza a média das receitas e despesas comuns dos três meses completos anteriores, evitando considerar o mês atual, que pode estar incompleto. As despesas de cartão são calculadas separadamente, conforme o vencimento das parcelas já registradas, para evitar sua contagem em duplicidade.
+- **Variação financeira acumulada**: a projeção considera saldo inicial igual a zero e acumula os resultados estimados dos próximos três meses. Portanto, representa uma variação projetada, não o saldo real disponível nas contas.
+- **Dicas de economia**: são geradas automaticamente no back-end, utilizando regras condicionais baseadas nos indicadores financeiros. As informações possuem caráter educativo e não constituem recomendação financeira profissional.
+- **Dashboard**: apresenta o resumo mensal utilizando os dados dos lançamentos e relatórios existentes, sem duplicar os cálculos financeiros no front-end. O usuário pode selecionar o mês e o ano para consultar períodos diferentes.
 
 ## Equipe
 
@@ -136,4 +145,4 @@ No back-end, basta `throw new HttpError(status, mensagem, fields)` (de `middlewa
 |---|---|
 | Pessoa 1 | Estrutura, banco, usuários e autenticação |
 | Nádia Akemi Yuzawa | Categorias, fontes/destinos e lançamentos |
-| Pessoa 3 | Relatórios, faturas e saúde financeira |
+| Beatriz Milanezi Lopes | Relatórios, faturas e saúde financeira |
