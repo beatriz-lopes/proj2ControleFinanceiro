@@ -5,11 +5,15 @@ import Layout from './components/Layout.jsx';
 import LoginPage from './components/LoginPage.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import RegisterPage from './components/RegisterPage.jsx';
-import UnderConstruction from './components/UnderConstruction.jsx';
 
 import CategoriesPage from './components/CategoriesPage.jsx';
 import TransactionsPage from './components/TransactionsPage.jsx';
 import AccountsPage from './components/AccountsPage.jsx';
+
+import ReportsPage from './components/ReportsPage.jsx';
+import InvoicesPage from './components/InvoicesPage.jsx';
+import FinancialHealthPage from './components/FinancialHealthPage.jsx';
+import DashboardPage from './components/DashboardPage.jsx';
 
 export default function App() {
   return (
@@ -20,16 +24,16 @@ export default function App() {
       <Route element={<ProtectedRoute />}>
         <Route element={<Layout />}>
 
-          <Route index element={<UnderConstruction title="Resumo do mês" />}/>
+          <Route index element={<DashboardPage />} />
           <Route path="transactions" element={<TransactionsPage />} />
           <Route path="categories" element={<CategoriesPage />}/>
           <Route path="accounts" element={<AccountsPage />}/>
 
-          <Route path="reports" element={<UnderConstruction title="Relatórios" />}/>
+          <Route path="reports" element={<ReportsPage />}/>
 
-          <Route path="invoices" element={<UnderConstruction title="Faturas" />}/>
+          <Route path="invoices" element={<InvoicesPage />} />
 
-          <Route path="financial-health" element={<UnderConstruction title="Saúde financeira" />}/>
+          <Route path="financial-health" element={<FinancialHealthPage />}/>
 
         </Route>
       </Route>

@@ -136,3 +136,410 @@ th {
     font-size: 0.85rem;
   }
 }
+
+
+/* Pessoa 3 */
+
+.reports-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 1rem;
+}
+
+.reports-filters .field {
+  flex: 1;
+  min-width: 180px;
+  margin-bottom: 0;
+}
+
+.reports-filters button {
+  height: 38px;
+}
+
+.reports-page .table-container {
+  margin-top: 1rem;
+}
+
+.reports-period-comparison {
+  margin: 1rem 0;
+}
+
+.reports-period-comparison p {
+  margin: 0.25rem 0;
+}
+
+
+@media (max-width: 700px) {
+  .reports-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .reports-filters .field {
+    width: 100%;
+  }
+}
+
+/* Gráfico Recharts — RF7 */
+
+.category-chart {
+  width: 100%;
+  min-width: 0;
+  margin-top: 1.5rem;
+}
+
+.category-chart .recharts-tooltip-wrapper {
+  outline: none;
+}
+
+@media (max-width: 600px) {
+  .category-chart {
+    overflow-x: auto;
+  }
+
+  .category-chart > .recharts-responsive-container {
+    min-width: 420px;
+  }
+}
+
+
+/* RF8 - Relatório por fonte/destino */
+
+.accounts-report {
+  margin-top: 1rem;
+}
+
+.accounts-chart {
+  width: 100%;
+  min-width: 0;
+  margin-top: 1.5rem;
+}
+
+.accounts-report .table-container {
+  overflow-x: auto;
+}
+
+.accounts-report table {
+  min-width: 650px;
+}
+
+@media (max-width: 600px) {
+  .accounts-chart {
+    overflow-x: auto;
+  }
+
+  .accounts-chart > .recharts-responsive-container {
+    min-width: 450px;
+  }
+}
+
+
+/* Abas dos relatórios */
+
+.reports-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 24px 0;
+  padding: 6px;
+  background: #e9edf3;
+  border-radius: 8px;
+}
+
+.reports-tabs button {
+  flex: 1;
+  padding: 12px 16px;
+  background: transparent;
+  color: #50596a;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.reports-tabs button.active {
+  background: #ffffff;
+  color: #2f6fde;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.reports-tabs button:hover:not(.active) {
+  background: #dce3ef;
+}
+
+.reports-tabs button:focus-visible {
+  outline: 2px solid #2f6fde;
+  outline-offset: 2px;
+}
+
+/* RF9 - Previsão de faturas */
+
+.invoices-page h2 {
+  font-size: 1.15rem;
+  margin-bottom: 1rem;
+}
+
+.invoice-limit-track {
+  width: 100%;
+  height: 16px;
+  background: #e9edf3;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.invoice-limit-bar {
+  height: 100%;
+  background: var(--primary);
+  border-radius: 8px;
+  transition: width 0.2s ease;
+}
+
+.invoice-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.invoice-item {
+  margin-bottom: 0;
+}
+
+.invoice-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  cursor: pointer;
+}
+
+.invoice-summary-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.invoice-summary-info strong {
+  text-transform: uppercase;
+}
+
+.invoice-summary-info .status {
+  font-size: 0.85rem;
+}
+
+.invoice-details {
+  border-top: 1px solid var(--border);
+  margin-top: 1rem;
+  padding-top: 1rem;
+}
+
+.invoice-dates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 2rem;
+  font-size: 0.9rem;
+}
+
+.invoice-total {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  border-top: 1px solid var(--border);
+  padding-top: 1rem;
+  margin-top: 1rem;
+}
+
+.invoice-disclaimer {
+  font-size: 0.85rem;
+  margin-top: 1.5rem;
+}
+
+.invoice-open {
+  border-left: 4px solid #2f6fde;
+}
+
+@media (max-width: 700px) {
+  .invoices-page .summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .invoice-summary {
+    align-items: flex-start;
+  }
+
+  .invoice-details .table-container {
+    overflow-x: auto;
+  }
+
+  .invoice-details table {
+    min-width: 550px;
+  }
+}
+
+
+/* Desafio extra - Saúde financeira */
+
+.financial-health-page .summary-grid {
+  margin: 1.5rem 0;
+}
+
+.financial-health-page .summary-grid .card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.financial-health-page .summary-grid strong {
+  font-size: 1.7rem;
+}
+
+.financial-projection-chart {
+  width: 100%;
+  min-width: 0;
+  margin-top: 1.5rem;
+}
+
+.financial-health-page .table-container {
+  margin-top: 1rem;
+  overflow-x: auto;
+}
+
+.financial-health-page table {
+  min-width: 900px;
+}
+
+.financial-health-averages {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.financial-health-averages > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: #f3f6fc;
+  border-radius: 8px;
+}
+
+.financial-health-averages span {
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.financial-health-averages strong {
+  font-size: 1.3rem;
+}
+
+.financial-health-tips {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-left: 1.5rem;
+}
+
+.financial-health-tips li {
+  line-height: 1.6;
+}
+
+.financial-health-disclaimer {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #f8fafc;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: #475569;
+}
+
+@media (max-width: 700px) {
+  .financial-health-averages {
+    grid-template-columns: 1fr;
+  }
+
+  .financial-projection-chart {
+    overflow-x: auto;
+  }
+
+  .financial-projection-chart
+  > .recharts-responsive-container {
+    min-width: 420px;
+  }
+}
+
+
+/* Dashboard - Resumo financeiro */
+
+.dashboard-month-filter {
+  display: flex;
+  align-items: end;
+  gap: 1rem;
+}
+
+.dashboard-month-filter .field {
+  width: 100%;
+  max-width: 320px;
+  margin-bottom: 0;
+}
+
+.dashboard-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.dashboard-section-header h2 {
+  margin: 0;
+}
+
+.dashboard-section-header a,
+.dashboard-actions a {
+  color: #2f6fde;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.dashboard-section-header a:hover,
+.dashboard-actions a:hover {
+  text-decoration: underline;
+}
+
+.dashboard-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.dashboard-actions a {
+  padding: 0.75rem 1rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+}
+
+.dashboard-page .table-container {
+  overflow-x: auto;
+}
+
+.dashboard-installment {
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+@media (max-width: 700px) {
+  .dashboard-month-filter .field {
+    max-width: none;
+  }
+
+  .dashboard-actions {
+    flex-direction: column;
+  }
+
+  .dashboard-page table {
+    min-width: 600px;
+  }
+}
