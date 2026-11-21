@@ -13,6 +13,7 @@ import AccountsPage from './components/AccountsPage.jsx';
 
 import ReportsPage from './components/ReportsPage.jsx';
 import InvoicesPage from './components/InvoicesPage.jsx';
+import FinancialHealthPage from './components/FinancialHealthPage.jsx';
 
 export default function App() {
   return (
@@ -32,7 +33,7 @@ export default function App() {
 
           <Route path="invoices" element={<InvoicesPage />} />
 
-          <Route path="financial-health" element={<UnderConstruction title="Saúde financeira" />}/>
+          <Route path="financial-health" element={<FinancialHealthPage />}/>
 
         </Route>
       </Route>
