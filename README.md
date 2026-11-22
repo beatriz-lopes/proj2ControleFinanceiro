@@ -3,6 +3,13 @@
 API REST em Node.js/Express + SPA em React para controle financeiro pessoal: cadastro e login,
 categorias, fontes/destinos, lançamentos (com compras parceladas), relatórios e previsão de faturas.
 
+## Apresentação do projeto
+
+O vídeo apresenta o funcionamento da aplicação, incluindo o cadastro e a autenticação de usuários, o gerenciamento de movimentações financeiras, os relatórios, a previsão de faturas e os indicadores de saúde financeira.
+
+**[▶ Assistir à apresentação do projeto](https://drive.google.com/file/d/1rEr3O208kPHuhGqcpDZ9arvju0yrfSoK/view?usp=sharing)**
+
+
 ## Tecnologias
 
 | Camada | Tecnologias |
